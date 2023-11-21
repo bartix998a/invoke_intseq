@@ -1,2 +1,3 @@
 .jukit/
 CMakeLists.txt
+array_init.cc
