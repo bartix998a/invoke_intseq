@@ -7,6 +7,9 @@
 #include <optional>
 #include <tuple>
 
+//When I wrote this, only God and I understood what I was doing
+//Now, God only knows
+
 template <class F, class... Args>
 constexpr auto invoke_intseq(F &&f, Args &&...args);
 
