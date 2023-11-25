@@ -7,6 +7,9 @@
 #include <optional>
 #include <tuple>
 
+template <class F, class... Args>
+constexpr auto invoke_intseq(F &&f, Args &&...args);
+
 namespace invoke_inteq_details {
 
 template <typename T> struct is_integer_sequence : std::false_type {};
@@ -20,12 +23,24 @@ struct is_integer_sequence<std::integer_sequence<T, vals...>> : std::true_type {
 template <class... others>
 struct any_match : std::disjunction<is_integer_sequence<others>...> {};
 
+template <size_t pos, class F, std::tuple t, typename First, typename ...Rest>
+struct call_intseq {
+    constexpr auto expand_tuple(F&& f, First&& first, Rest&& ...rest){
+        if constexpr (pos > 0){
+            return expand_tuple<pos - 1, F, t, std::result_of<decltype(get<pos>(t))>, Rest...>(f, get<pos>(t), rest ...);
+        } else {
+            return invoke_intseq<F, std::result_of<decltype(get<pos>(t))>, Rest...>(f, get<pos>(t), rest ...);
+        }
+
+    }
+};
+
 // Finds the first element that is an integer sequence
 // Assumes that arguments contain integer sequence
 template <size_t pos, class F, std::tuple t, typename First, typename ...Rest>
 struct find_first_struct {
     constexpr auto findFirst(F&& f, First&& first, Rest&& ...rest){
-        return findFirst<t, Rest...>(rest ...);
+        return findFirst<pos + 1, F, t, Rest...>(f, rest ...);
     }
 };
 
@@ -33,24 +48,21 @@ struct find_first_struct {
 template <size_t pos, class F,std::tuple t, typename T, T... vals, typename ...Rest>
 struct find_first_struct<pos, F ,t, std::integer_sequence<T, vals...>, Rest...> {
     constexpr auto findFirst(F&& f, T&& first, Rest&& ...rest){
-        return std::array<std::result_of<decltype(f)()>, sizeof... (vals)> (expandRecursively);
+        return std::array<std::result_of<decltype(f)()>, sizeof... (vals)> (
+            call_intseq<pos - 1, F, t, std::integral_constant<T, vals>, Rest...>(f, std::integral_constant<T, vals>::value, rest)...);
     }
 };
 
-template<size_t pos, class  F,std::tuple t, typename First>
+template <size_t pos, class  F,std::tuple t, typename First>
 struct find_first_struct<pos, F, t, First>{
     constexpr auto findFirst(F&& f,First&& first){
         if constexpr (is_integer_sequence<First>::value){
             return first;
         }
-    }
-
-    template<>
-    constexpr auto expandRecursively(){
-
-    }
-
+    };
 };
+
+
 
 } // namespace invoke_inteq_details
 template <class F, class... Args>
