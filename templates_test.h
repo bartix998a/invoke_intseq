@@ -9,7 +9,7 @@
 #include <utility>
 
 // Helper to print a tuple
-// 0
+// fun0 for short
 // Prints elements of tuple with indexes contained in index_sequence.
 // for example, invoking it with index_sequence<2, 4> will print the 3rd and 5th
 // elements of the tuple.
@@ -20,13 +20,13 @@ void print_tuple_impl(const Tuple &t, std::index_sequence<Is...>) {
      ...);
 }
 
-// 1
+// fun1 for short
 // Specialization for 0
 template <typename... T> void print_tuple(const std::tuple<T...> &t) {
     print_tuple_impl(t, std::index_sequence_for<T...>{});
 }
 
-// 2
+// fun2 for short
 // Recursive function to generate and print combinations
 template <typename T, T... Ints, typename... Rest>
 void print_combinations_impl(const std::tuple<Rest...> &acc,
@@ -34,7 +34,7 @@ void print_combinations_impl(const std::tuple<Rest...> &acc,
     (print_tuple(std::tuple_cat(acc, std::make_tuple(Ints))), ...);
 }
 
-// 3
+// fun3 for short
 // specialisation for 2
 template <typename T, T... HeadInts, typename... TailSeq,
           typename... Accumulated>
@@ -42,11 +42,35 @@ void print_combinations_impl(const std::tuple<Accumulated...> &acc, // tuplarz
                              std::integer_sequence<T, HeadInts...>, // first integer sequence
                              TailSeq... rest)  // rest of integer sequences
 {
-    (..., (print_combinations_impl(std::tuple_cat(acc, std::make_tuple(HeadInts)), rest...)));
+    (..., // fold prints using comma operator
+        // this does nothing except printing, results are discarded
+        print_combinations_impl(std::tuple_cat(acc, std::make_tuple(HeadInts)), rest...));
+    /*
+    * We have 3 seqences, since we called fun4({1, 2}, {3, 4}, {5, 6})
+    * The first invocation of this function occurs in fun4 and is like this:
+    * fun3({}, {1, 2}, {3, 4}, {5, 6})
+    * Now, the fold unfolds.
+    * First, we have:
+    * (fun3({1}, {3, 4}, {5, 6}), fun3({2}, {3, 4}, {5, 6}))
+    * Before being executed it unfolds, stil using fun3, because it is the best match
+    * Now the fold looks like this:
+    * (fun3({1, 3}, {5, 6}), fun3({1, 4}, {5, 6}), fun3({2, 3}, {5, 6}), fun3({2, 4}, {5, 6})) <----------------------------|
+    * Now, the fold unfolds again, this time using fun2, because it is the best match                                       |
+    * So, fun3 is acctually fun2, and the fold looks like this (there is no new function - instead compiler realised that this best matches fun2)::
+    * (fun2({1, 3}, {5, 6}), fun2({1, 4}, {5, 6}), fun2({2, 3}, {5, 6}), fun2({2, 4}, {5, 6}))
+    * Now, lets look at the first element of the fold:
+    * fun2({1, 3}, {5, 6})
+    * It invokes something that looks like:
+    * for (ii in Inst) {
+    * print_tuple(std::tuple_cat(acc, std::make_tuple(ii)));
+    * },
+    * and print_tuple (fun1) prints the tuple (no fancy shit, just elegant printing, no recursion, no nothing - simple loops).
+    *
+    */
 
 }
 
-// 4
+// fun4 for short
 template <typename... Seqs> void print_all_combinations(Seqs... seqs) {
     auto tuplarz = std::tuple<>{};
     print_combinations_impl(tuplarz, seqs...); // Calls 3
@@ -54,6 +78,7 @@ template <typename... Seqs> void print_all_combinations(Seqs... seqs) {
 
 
 // Struct version
+// Same logic, just different look
 struct TuplePrinter {
     template <typename Tuple, std::size_t... Is>
     static void print_impl(const Tuple &t, std::index_sequence<Is...>) {
