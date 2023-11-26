@@ -114,7 +114,6 @@ struct CombinationsGenerator {
     static auto generate_impl(const std::tuple<Accumulated...>& acc,
                               T val,
                               TailSeq... rest) {
-        static_assert(std::is_integral<T>::value, "T must be an integral type");
         // Make one tuple from multiple tuples
         return generate_impl(std::tuple_cat(acc, std::make_tuple(val)), rest...);
     }
