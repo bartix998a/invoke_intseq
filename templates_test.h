@@ -16,8 +16,7 @@
 // index_sequence is integer sequence for type size_t
 template <typename Tuple, std::size_t... Is>
 void print_tuple_impl(const Tuple &t, std::index_sequence<Is...>) {
-    ((std::cout << std::get<Is>(t) << (Is < sizeof...(Is) - 1 ? " " : "\n")),
-     ...);
+    ((std::cout << std::get<Is>(t) << (Is < sizeof...(Is) - 1 ? " " : "\n")), ...);
 }
 
 // fun1 for short
@@ -82,34 +81,43 @@ template <typename... Seqs> void print_all_combinations(Seqs... seqs) {
 struct TuplePrinter {
     template <typename Tuple, std::size_t... Is>
     static void print_impl(const Tuple &t, std::index_sequence<Is...>) {
-        ((std::cout << std::get<Is>(t) << (Is < sizeof...(Is) - 1 ? " " : "\n")),
-         ...);
+        ((std::cout << std::get<Is>(t) << (Is < sizeof...(Is) - 1 ? " " : "\n")), ...);
     }
 
     template <typename... T>
-    static void print(const std::tuple<T...> &t) {
+    static auto print(const std::tuple<T...> &t) {
         print_impl(t, std::index_sequence_for<T...>{});
+    }
+
+    template <typename T>
+    static auto print(const T &t) {
+        std::cout << t << " ";
     }
 };
 
 struct CombinationsGenerator {
-    template <typename T, T... Ints, typename... Rest>
-    static void generate_impl(const std::tuple<Rest...> &acc,
+    // Base case for the recursion - when only one sequence is left
+    template <typename T, T... Ints, typename... Accumulated>
+    static auto generate_impl(const std::tuple<Accumulated...>& acc, 
                               std::integer_sequence<T, Ints...>) {
-        (TuplePrinter::print(std::tuple_cat(acc, std::make_tuple(Ints))), ...);
+        return std::make_tuple(std::tuple_cat(acc, std::make_tuple(Ints))...);
     }
 
+    // Recursive case - handles multiple integer sequences
     template <typename T, T... HeadInts, typename... TailSeq, typename... Accumulated>
-    static void generate_impl(const std::tuple<Accumulated...> &acc,
+    static auto generate_impl(const std::tuple<Accumulated...>& acc,
                               std::integer_sequence<T, HeadInts...>,
                               TailSeq... rest) {
-        (..., (generate_impl(std::tuple_cat(acc, std::make_tuple(HeadInts)), rest...)));
+        return std::apply(
+            [](auto&&... args) { return std::tuple_cat(args...); }, 
+            std::make_tuple(generate_impl(std::tuple_cat(acc, std::make_tuple(HeadInts)), rest...)...)
+        );
     }
 
     template <typename... Seqs>
-    static void generate(Seqs... seqs) {
+    static auto generate(Seqs... seqs) {
         auto acc = std::tuple<>{};
-        generate_impl(acc, seqs...);
+        return generate_impl(acc, seqs...);
     }
 };
 #endif // TEST
