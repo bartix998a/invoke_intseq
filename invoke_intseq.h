@@ -88,7 +88,7 @@ constexpr size_t calc_size(Args&&... args) {
     if constexpr (sizeof...(args) == 0) {
         return 1;  // Return 1 if the parameter pack is empty
     } else {
-        return (calc_size(args) + ...);  // Sum of sizes for non-empty packs
+        return (calc_size(args) * ...);  // Sum of sizes for non-empty packs
     }
 }
 
@@ -100,7 +100,6 @@ constexpr auto invoke_intseq(F &&f, Args &&...args) {
     if constexpr (!invoke_inteq_details::any_match<Args...>::value || (sizeof... (args)) == 0) {
         return std::invoke(f, args...);
     } else {
-        // FIXME: uncoment
         return invoke_inteq_details::find_first_struct<
             0, F, Args... ,Args...>::findFirst(std::tuple<Args...>(args...), f, args...);
     }
