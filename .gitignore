@@ -1,3 +1,4 @@
 .jukit/
 CMakeLists.txt
 array_init.cc
+test_priv.cpp

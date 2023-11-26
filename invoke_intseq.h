@@ -72,7 +72,7 @@ struct find_first_struct<pos, F, std::tuple<T...>, std::integer_sequence<seq,val
 } // namespace invoke_inteq_details
 template <class F, class... Args>
 constexpr auto invoke_intseq(F &&f, Args &&...args) {
-    if constexpr (std::is_same<std::false_type, invoke_inteq_details::any_match<Args...>>::value || (sizeof... (args)) == 0) {
+    if constexpr (!invoke_inteq_details::any_match<Args...>::value || (sizeof... (args)) == 0) {
         return std::invoke(f, args...);
     } else {
         return invoke_inteq_details::find_first_struct<
