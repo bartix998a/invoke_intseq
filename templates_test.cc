@@ -29,7 +29,7 @@ void printCombinations(const std::tuple<Tuples...>& combinations) {
 
 int main() {
     auto seq1 = std::integer_sequence<int, 0, 1>{};
-    auto seq2 = std::integer_sequence<int, 2, 3>{};
+    auto seq2 = 2;
     auto seq3 = std::integer_sequence<int, 4, 5>{};
 
     // Start measuring time for compile-time execution
@@ -42,7 +42,7 @@ int main() {
     // print_tuple_impl(std::make_tuple(0, 1, 2, 3, 4), std::index_sequence<2, 4>());
 
     // Struct version
-    auto combinations = CombinationsGenerator::generate(seq1, seq2, seq3);
+    auto combinations = CombinationsGenerator::generate(seq1, seq3, seq2);
     std::cout << "\n===========\n";
     std::cout << std::get<0>(std::get<0>(combinations)) << " ";
     std::cout << std::get<1>(std::get<0>(combinations)) << " ";
@@ -60,21 +60,22 @@ int main() {
     std::cout << std::get<1>(std::get<3>(combinations)) << " ";
     std::cout << std::get<2>(std::get<3>(combinations)) << "\n";
 
-    std::cout << std::get<0>(std::get<4>(combinations)) << " ";
-    std::cout << std::get<1>(std::get<4>(combinations)) << " ";
-    std::cout << std::get<2>(std::get<4>(combinations)) << "\n";
+    // std::cout << std::get<0>(std::get<4>(combinations)) << " ";
+    // std::cout << std::get<1>(std::get<4>(combinations)) << " ";
+    // std::cout << std::get<2>(std::get<4>(combinations)) << "\n";
+    //
+    // std::cout << std::get<0>(std::get<5>(combinations)) << " ";
+    // std::cout << std::get<1>(std::get<5>(combinations)) << " ";
+    // std::cout << std::get<2>(std::get<5>(combinations)) << "\n";
+    //
+    // std::cout << std::get<0>(std::get<6>(combinations)) << " ";
+    // std::cout << std::get<1>(std::get<6>(combinations)) << " ";
+    // std::cout << std::get<2>(std::get<6>(combinations)) << "\n";
+    //
+    // std::cout << std::get<0>(std::get<7>(combinations)) << " ";
+    // std::cout << std::get<1>(std::get<7>(combinations)) << " ";
+    // std::cout << std::get<2>(std::get<7>(combinations)) << "\n";
 
-    std::cout << std::get<0>(std::get<5>(combinations)) << " ";
-    std::cout << std::get<1>(std::get<5>(combinations)) << " ";
-    std::cout << std::get<2>(std::get<5>(combinations)) << "\n";
-
-    std::cout << std::get<0>(std::get<6>(combinations)) << " ";
-    std::cout << std::get<1>(std::get<6>(combinations)) << " ";
-    std::cout << std::get<2>(std::get<6>(combinations)) << "\n";
-
-    std::cout << std::get<0>(std::get<7>(combinations)) << " ";
-    std::cout << std::get<1>(std::get<7>(combinations)) << " ";
-    std::cout << std::get<2>(std::get<7>(combinations)) << "\n";
-
+    std::cout << "\n";
     return 0;
 }
