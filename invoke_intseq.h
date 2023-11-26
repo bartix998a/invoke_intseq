@@ -68,30 +68,44 @@ struct find_first_struct<pos, F, std::tuple<T...>, std::integer_sequence<seq,val
     }
 };
 
-
-
-// Calculates the size needed for an resulting array
+// Forward declaration with universal references
 template <typename... Args>
 constexpr size_t calc_size(Args&&... args);
 
+// Specialization for std::integer_sequence
+template <typename T, T... Ints>
+constexpr size_t calc_size(std::integer_sequence<T, Ints...>) {
+    return sizeof...(Ints);
+}
+
+// General case for single non-integer_sequence argument
 template <typename T>
-constexpr size_t calc_size(T seq){
+constexpr size_t calc_size(T) {
     return 1;
 }
-template <typename T>
-constexpr size_t calc_size(std::integer_sequence<T> seq){
-    return seq.size();
+
+// Recursive variadic template for multiple arguments
+template <typename First, typename... Rest>
+constexpr size_t calc_size(First&& first, Rest&&... rest) {
+    return calc_size(std::forward<First>(first)) * calc_size(std::forward<Rest>(rest)...);
 }
 
-template <typename... Args>
-constexpr size_t calc_size(Args&&... args) {
-    if constexpr (sizeof...(args) == 0) {
-        return 1;  // Return 1 if the parameter pack is empty
-    } else {
-        return (calc_size(args) * ...);  // Sum of sizes for non-empty packs
-    }
+template <>
+constexpr size_t calc_size() {
+    return 1;
 }
 
+// FIXME:
+    static_assert(calc_size(2, 2) == 1, "this");
+    static_assert(calc_size(7, std::integer_sequence<int, 0, 1>{}, std::integer_sequence<int, 4, 5>{}) == 4, "this");
+    static_assert(calc_size() == 1, "this");
+    static_assert(calc_size(
+        std::integer_sequence<int, 0, 1>{},
+        std::integer_sequence<int, 0, 1>{},
+        std::integer_sequence<int, 0, 1>{}
+    ) == 8, "this");
+    static_assert(calc_size(std::integer_sequence<int, 0, 1>{}, 2) == 2, "this");
+    static_assert(calc_size(std::integer_sequence<int, 4, 4>{}) == 2, "this");
 
 
 } // namespace invoke_inteq_details
