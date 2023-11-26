@@ -103,11 +103,29 @@ struct CombinationsGenerator {
         return std::make_tuple(std::tuple_cat(acc, std::make_tuple(Ints))...);
     }
 
+    template <typename T, typename... Accumulated>
+    static auto generate_impl(const std::tuple<Accumulated...>& acc, 
+                              T val) {
+        return std::make_tuple(std::tuple_cat(acc, std::make_tuple(val)));
+    }
+
+    // Recursive case - handles multiple integer sequences
+    template <typename T, typename... TailSeq, typename... Accumulated>
+    static auto generate_impl(const std::tuple<Accumulated...>& acc,
+                              T val,
+                              TailSeq... rest) {
+        static_assert(std::is_integral<T>::value, "T must be an integral type");
+        // Make one tuple from multiple tuples
+        return generate_impl(std::tuple_cat(acc, std::make_tuple(val)), rest...);
+    }
+
+
     // Recursive case - handles multiple integer sequences
     template <typename T, T... HeadInts, typename... TailSeq, typename... Accumulated>
     static auto generate_impl(const std::tuple<Accumulated...>& acc,
                               std::integer_sequence<T, HeadInts...>,
                               TailSeq... rest) {
+        // Make one tuple from multiple tuples
         return std::apply(
             [](auto&&... args) { return std::tuple_cat(args...); }, 
             std::make_tuple(generate_impl(std::tuple_cat(acc, std::make_tuple(HeadInts)), rest...)...)
