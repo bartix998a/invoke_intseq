@@ -152,19 +152,19 @@ template <typename... Seqs> static auto generate(Seqs... seqs) {
 struct CombinationsGenerator {
     // Base case for the recursion - when only one sequence is left
     template <typename T, T... Ints, typename... Accumulated>
-    static auto generate_impl(const std::tuple<Accumulated...> &acc,
+    constexpr static auto generate_impl(const std::tuple<Accumulated...> &acc,
                               std::integer_sequence<T, Ints...>) {
         return std::make_tuple(std::tuple_cat(acc, std::make_tuple(Ints))...);
     }
 
     template <typename T, typename... Accumulated>
-    static auto generate_impl(const std::tuple<Accumulated...> &acc, T val) {
+    constexpr static auto generate_impl(const std::tuple<Accumulated...> &acc, T val) {
         return std::make_tuple(std::tuple_cat(acc, std::make_tuple(val)));
     }
 
     // Recursive case - handles multiple integer sequences
     template <typename T, typename... TailSeq, typename... Accumulated>
-    static auto generate_impl(const std::tuple<Accumulated...> &acc, T val,
+    constexpr static auto generate_impl(const std::tuple<Accumulated...> &acc, T val,
                               TailSeq... rest) {
         // Make one tuple from multiple tuples
         return generate_impl(std::tuple_cat(acc, std::make_tuple(val)),
@@ -174,7 +174,7 @@ struct CombinationsGenerator {
     // Recursive case - handles multiple integer sequences
     template <typename T, T... HeadInts, typename... TailSeq,
               typename... Accumulated>
-    static auto generate_impl(const std::tuple<Accumulated...> &acc,
+ constexpr static auto generate_impl(const std::tuple<Accumulated...> &acc,
                               std::integer_sequence<T, HeadInts...>,
                               TailSeq... rest) {
         // Make one tuple from multiple tuples
@@ -184,7 +184,7 @@ struct CombinationsGenerator {
                 std::tuple_cat(acc, std::make_tuple(HeadInts)), rest...)...));
     }
 
-    template <typename... Seqs> static auto generate(Seqs... seqs) {
+    template <typename... Seqs> constexpr static auto generate(Seqs... seqs) {
         auto acc = std::tuple<>{};
         return generate_impl(acc, seqs...);
     }
