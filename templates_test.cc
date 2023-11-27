@@ -29,7 +29,7 @@ void printCombinations(const std::tuple<Tuples...>& combinations) {
 
 int main() {
     auto seq1 = std::integer_sequence<int, 0, 1>{};
-    auto seq2 = 2;
+    auto seq2 = std::integer_sequence<int, 6, 9>{};
     auto seq3 = std::integer_sequence<int, 4, 5>{};
 
     // Start measuring time for compile-time execution
@@ -40,9 +40,29 @@ int main() {
     // );
 
     // print_tuple_impl(std::make_tuple(0, 1, 2, 3, 4), std::index_sequence<2, 4>());
+    // constexpr size_t SIZE = CombinationsGenerator::calc_size(seq1, seq2, seq3);
+
+    auto combinations = CombinationsGenerator::generate(seq1, seq3, seq2);
+    auto func = [](const auto&... args) -> int {
+        return (0 + ... + args); // Fold expression to sum the elements
+    };
+
+    auto func2 = [](const auto&... args) {
+    };
+    auto resultArray = CombinationsGenerator::apply_to_something_weird(func, seq1, seq3, seq2, seq1, seq2, 4);
+    // auto resultArray2 = CombinationsGenerator::apply_to_something_weird(func2, seq1, seq3, seq2, seq1, seq2, 4);
+    for (auto i : resultArray) {
+        std::cout << i << " ";
+    }
+    std::cout << resultArray.size() << "\n";
+        
+    // for (auto i : resultArray2) {
+    //     std::cout << i << " ";
+    // }
+    // std::cout << resultArray2.size() << "\n";
+    // auto resultArray = convert_to_array([](auto a...) { return (a + ...); }, combinations, SIZE);
 
     // Struct version
-    auto combinations = CombinationsGenerator::generate(seq1, seq3, seq2);
     std::cout << "\n===========\n";
     std::cout << std::get<0>(std::get<0>(combinations)) << " ";
     std::cout << std::get<1>(std::get<0>(combinations)) << " ";
