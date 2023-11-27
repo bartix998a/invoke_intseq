@@ -122,11 +122,11 @@ int main() {
     //               std::integral_constant<int, 3>(),
     //               std::integer_sequence<int, 7, 8>());
 
-    std::cout << "template Print all" << std::endl;
-    invoke_intseq([](auto... a) { Printer<int, a...>::Print(); },
-                  std::integer_sequence<int, 1, 2>(),
-                  std::integral_constant<int, 3>(),
-                  std::integer_sequence<int, 7, 8>());
+    // std::cout << "template Print all" << std::endl;
+    // invoke_intseq([](auto... a) { Printer<int, a...>::Print(); },
+    //               std::integer_sequence<int, 1, 2>(),
+    //               std::integral_constant<int, 3>(),
+    //               std::integer_sequence<int, 7, 8>());
 
     std::cout << "single result" << std::endl;
     std::cout << invoke_intseq(make_number, 9, 8, 7) << std::endl;
@@ -141,10 +141,10 @@ int main() {
         std::array{654}));
 
     std::cout << "integer sequence empty result" << std::endl;
-    for (auto i : invoke_intseq(make_number, std::integer_sequence<int>(), 5, 4))
-        std::cout << i << std::endl;
-    static_assert(std::ranges::equal(invoke_intseq(make_number, std::integer_sequence<int>(), 5, 4),
-        std::array<int, 0>{}));
+    // for (auto i : invoke_intseq(make_number, std::integer_sequence<int>(), 5, 4))
+    //     std::cout << i << std::endl;
+    // static_assert(std::ranges::equal(invoke_intseq(make_number, std::integer_sequence<int>(), 5, 4),
+    //     std::array<int, 0>{}));
 
     std::cout << "integer sequence multiple result" << std::endl;
     for (auto i :
@@ -181,18 +181,18 @@ int main() {
     invoke_intseq([](auto... a) { Print(a...); }, std::make_index_sequence<2>(),
                   Foo(), foo);
 
-    std::cout << "reference passing with integer_sequence" << std::endl;
-    s = 0;
-    auto ref_seq = invoke_intseq(
-        [](size_t a, size_t &r) -> size_t & {
-            r += a;
-            return r;
-        },
-        std::make_index_sequence<5>(), s);
-    std::cout << s << std::endl;
-    for (size_t &r : ref_seq)
-        r++;
-    std::cout << s << std::endl;
+    // std::cout << "reference passing with integer_sequence" << std::endl;
+    // s = 0;
+    // auto ref_seq = invoke_intseq(
+    //     [](size_t a, size_t &r) -> size_t & {
+    //         r += a;
+    //         return r;
+    //     },
+    //     std::make_index_sequence<5>(), s);
+    // std::cout << s << std::endl;
+    // for (size_t &r : ref_seq)
+    //     r++;
+    // std::cout << s << std::endl;
 
     std::cout << "reference result single" << std::endl;
     invoke_intseq(

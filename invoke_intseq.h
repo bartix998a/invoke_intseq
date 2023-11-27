@@ -6,6 +6,7 @@
 #include <optional>
 #include <tuple>
 #include <type_traits>
+#include <vector>
 
 // When I wrote this, only God and I understood what I was doing
 // Now, God only knows
@@ -152,10 +153,10 @@ struct Comb_gen {
     // will generate
     // {{0, 2, 3}, {0, 2, 4}, {1, 2, 3}, {1, 2, 4}}
     // (where {} denotes a tuple)
-    template <typename... Seqs> constexpr static auto generate(Seqs... seqs) {
+    template <typename... Args> constexpr static auto generate(Args... args) {
         auto acc = std::tuple<>{};
-        size_t size = calc_size(seqs...);
-        return generate_impl(acc, seqs...);
+        size_t size = calc_size(args...);
+        return generate_impl(acc, args...);
     }
 
     // Applies function f to a single inner-tuple (so one possible combination of 
@@ -219,14 +220,17 @@ struct Comb_gen {
         }
     }
 
-    template <class F, typename... Seqs>
-    constexpr static auto apply_to_comb(F &&f, Seqs &&...seqs)
+    template <class F, typename... Args>
+    constexpr static auto apply_to_comb(F &&f, Args &&...args)
         -> decltype(auto) {
 
-        auto myTuple = generate(seqs...);
-        constexpr size_t arraySize = std::tuple_size<decltype(myTuple)>::value;
-        return convert_to_array<F, decltype(myTuple), arraySize>(
-            std::forward<F>(f), myTuple);
+        auto myTuple = generate(args...);
+        using restype = std::invoke_result_t<F, Args...>;
+        std::vector<restype> result{};
+        std::apply([](auto& ...x){(..., result.push_back(x));},  myTuple);
+        return result;
+        // return convert_to_array<F, decltype(myTuple), arraySize>(
+        //     std::forward<F>(f), myTuple);
     }
 };
 
