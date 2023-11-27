@@ -79,9 +79,12 @@ int main() {
                            [](auto...) {},
                            std::integer_sequence<int, 1, 2, 3>(), 4, 5)),
                        void>);
-    static_assert(std::ranges::range<decltype(invoke_intseq([](auto...) { return 0; }, std::integer_sequence<int, 1, 2, 3>(), 4, 5))>);
+    static_assert(std::ranges::range<decltype(invoke_intseq(
+                      [](auto...) { return 0; },
+                      std::integer_sequence<int, 1, 2, 3>(), 4, 5))>);
     static_assert(
-        std::is_same_v<std::ranges::range_value_t<decltype(invoke_intseq( [](auto...) { return 0; },
+        std::is_same_v<std::ranges::range_value_t<decltype(invoke_intseq(
+                           [](auto...) { return 0; },
                            std::integer_sequence<int, 1, 2, 3>(), 4, 5))>,
                        int>);
 
@@ -111,15 +114,16 @@ int main() {
                   std::integer_sequence<int, 7, 8>());
 
     std::cout << "template Print single" << std::endl;
-    auto template_print = [=](auto... a) {
-        Printer<int, make_number(a...)>::Print();
-    };
-    invoke_intseq(template_print, std::integer_sequence<int, 1, 2>(),
-                  std::integral_constant<int, 3>(),
-                  std::integer_sequence<int, 7, 8>());
+    // FIXME:
+    // auto template_print = [=](auto... a) {
+    //     Printer<int, make_number(a...)>::Print();
+    // };
+    // invoke_intseq(template_print, std::integer_sequence<int, 1, 2>(),
+    //               std::integral_constant<int, 3>(),
+    //               std::integer_sequence<int, 7, 8>());
 
     std::cout << "template Print all" << std::endl;
-    invoke_intseq([=](auto... a) { Printer<int, a...>::Print(); },
+    invoke_intseq([](auto... a) { Printer<int, a...>::Print(); },
                   std::integer_sequence<int, 1, 2>(),
                   std::integral_constant<int, 3>(),
                   std::integer_sequence<int, 7, 8>());
@@ -137,11 +141,9 @@ int main() {
         std::array{654}));
 
     std::cout << "integer sequence empty result" << std::endl;
-    for (auto i :
-         invoke_intseq(make_number, std::integer_sequence<int>(), 5, 4))
+    for (auto i : invoke_intseq(make_number, std::integer_sequence<int>(), 5, 4))
         std::cout << i << std::endl;
-    static_assert(std::ranges::equal(
-        invoke_intseq(make_number, std::integer_sequence<int>(), 5, 4),
+    static_assert(std::ranges::equal(invoke_intseq(make_number, std::integer_sequence<int>(), 5, 4),
         std::array<int, 0>{}));
 
     std::cout << "integer sequence multiple result" << std::endl;
@@ -149,10 +151,7 @@ int main() {
          invoke_intseq(make_number, 1, std::integer_sequence<int, 2, 3>(),
                        std::integer_sequence<int, 4, 5>()))
         std::cout << i << std::endl;
-    static_assert(std::ranges::equal(
-        invoke_intseq(make_number, 1, std::integer_sequence<int, 2, 3>(),
-                      std::integer_sequence<int, 4, 5>()),
-        std::array{124, 125, 134, 135}));
+    static_assert(std::ranges::equal(invoke_intseq(make_number, 1, std::integer_sequence<int, 2, 3>(), std::integer_sequence<int, 4, 5>()), std::array{124, 125, 134, 135}));
 
     std::cout << "tuple result" << std::endl;
     for (const auto &t : invoke_intseq(

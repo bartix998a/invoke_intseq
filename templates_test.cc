@@ -29,9 +29,9 @@ void printCombinations(const std::tuple<Tuples...>& combinations) {
 }
 
 int main() {
-    auto seq1 = std::integer_sequence<int, 0, 1, 9>{};
-    auto seq2 = std::integer_sequence<int, 6, 9, 8>{};
-    auto seq3 = std::integer_sequence<int, 4, 5, 3>{};
+    auto seq1 = std::integer_sequence<int, 0, 9>{};
+    auto seq2 = std::integer_sequence<int, 6, 8>{};
+    auto seq3 = std::integer_sequence<int, 4, 3>{};
 
     // Start measuring time for compile-time execution
     // print_all_combinations(
@@ -57,14 +57,35 @@ int main() {
         std::cout << i << "\n";
     }
 
+    constexpr auto make_number = [](auto x, auto y, auto z) {
+        std::cout << "MN\n";
+        return 100 * x + 10 * y + z;
+    };
+    static_assert(invoke_inteq_details::calc_size(std::integer_sequence<int>(), 2) == 0, "this");
     auto res = CombinationsGenerator::apply_to_something_weird([](auto...) { return 0; }, std::integer_sequence<int, 1, 2, 3>(), seq1, 5);
     static_assert(std::ranges::range<decltype(invoke_intseq([](auto...) { return 0; }, std::integer_sequence<int, 1, 2, 3>(), 4, 5))>);
+    auto res2 = CombinationsGenerator::apply_to_something_weird(make_number, std::integer_sequence<int, 1, 2, 3>(), seq1, 5);
     std::cout << resultArray.size() << "\n";
-        
-    for (auto i : resultArray2) {
+    auto res3 = invoke_intseq(make_number, 1, std::integer_sequence<int, 2, 3>(), std::integer_sequence<int, 4, 5>());
+    auto exp = std::array{124, 125, 134, 135};
+    std::cout << "\n===========\n";
+    std::cout << "Res3";
+    std::cout << "\n===========\n";
+    for (auto i : res3) {
         std::cout << i << "\n";
     }
-    std::cout << resultArray2.size() << "\n";
+    std::cout << "\n===========\n";
+
+
+
+    std::cout << "\n===========\n";
+    std::cout << "\n===========\n";
+    for (auto i : res2) {
+        std::cout << i << "\n";
+    }
+    std::cout << "\n===========\n";
+    std::cout << "\n===========\n";
+    // std::cout << resultArray2.size() << "\n";
     // auto resultArray = convert_to_array([](auto a...) { return (a + ...); }, combinations, SIZE);
 
     // Struct version
