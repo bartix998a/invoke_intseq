@@ -26,6 +26,22 @@ struct is_integer_sequence<std::integer_sequence<T, vals...>> : std::true_type {
 template <class... others>
 struct any_match : std::disjunction<is_integer_sequence<others>...> {};
 
+
+
+// Trait to check if an std::integer_sequence is empty
+template <typename T>
+struct is_empty_integer_sequence : std::false_type {};
+
+template <typename T>
+struct is_empty_integer_sequence<std::integer_sequence<T>> : std::true_type {};
+
+// Check if any of the arguments is an empty integer sequence
+template <class... others>
+struct any_empty_integer_sequence : std::disjunction<is_empty_integer_sequence<others>...> {};
+
+
+
+
 template <size_t pos, class F, class t, typename First, typename... Rest>
 struct call_intseq {
     constexpr auto expand_tuple(F &&f, First &&first, Rest &&...rest) {
@@ -265,9 +281,11 @@ constexpr auto invoke_intseq(F &&f, Args &&...args) -> decltype(auto) {
                   sizeof...(args) == 0) {
         // Direct invocation for cases where special processing is not required
         return std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
-    } else {
+    } else if constexpr (!invoke_inteq_details::any_empty_integer_sequence<Args...>::value) {
         return invoke_inteq_details::Comb_gen::apply_to_comb(
             std::forward<F>(f), std::forward<Args>(args)...);
+    } else {
+        return std::vector<int>{};
     }
 }
 

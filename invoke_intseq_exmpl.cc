@@ -141,10 +141,10 @@ int main() {
         std::array{654}));
 
     std::cout << "integer sequence empty result" << std::endl;
-    // for (auto i : invoke_intseq(make_number, std::integer_sequence<int>(), 5, 4))
-    //     std::cout << i << std::endl;
-    // static_assert(std::ranges::equal(invoke_intseq(make_number, std::integer_sequence<int>(), 5, 4),
-    //     std::array<int, 0>{}));
+    for (auto i : invoke_intseq(make_number, std::integer_sequence<int>(), 5, 4))
+        std::cout << i << std::endl;
+    static_assert(std::ranges::equal(invoke_intseq(make_number, std::integer_sequence<int>(), 5, 4),
+        std::array<int, 0>{}));
 
     std::cout << "integer sequence multiple result" << std::endl;
     for (auto i :
