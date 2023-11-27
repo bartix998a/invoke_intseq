@@ -3,12 +3,16 @@
 #include <utility>
 // Helper function to print an individual tuple
 template <typename Tuple, std::size_t... Is>
-void printTupleImpl(const Tuple& t, std::index_sequence<Is...>) {
-}
+void printTupleImpl(const Tuple &t, std::index_sequence<Is...>) {}
 
 // Overload for printing a tuple
-template <typename... T>
-void printTuple(const std::tuple<T...>& t) {
+template <typename... T> void printTuple(const std::tuple<T...> &t) {
+    std::cout << "(";
+    printTupleImpl(t, std::index_sequence_for<T...>{});
+    std::cout << ")";
+}
+
+template <typename... T> void printTuple(std::tuple<T...> &&t) {
     std::cout << "(";
     printTupleImpl(t, std::index_sequence_for<T...>{});
     std::cout << ")";
@@ -16,15 +20,16 @@ void printTuple(const std::tuple<T...>& t) {
 
 // Function to print the entire set of combinations
 template <typename... Tuples>
-void printCombinations(const std::tuple<Tuples...>& combinations) {
+void printCombinations(const std::tuple<Tuples...> &combinations) {
     std::cout << "(";
     std::apply(
-        [&](const auto&... tuple) {
+        [&](const auto &...tuple) {
             int index = 0;
-            ((printTuple(tuple), std::cout << (++index < sizeof...(Tuples) ? ", " : "")), ...);
+            ((printTuple(tuple),
+              std::cout << (++index < sizeof...(Tuples) ? ", " : "")),
+             ...);
         },
-        combinations
-    );
+        combinations);
     std::cout << ")\n";
 }
 
@@ -40,19 +45,20 @@ int main() {
     //     seq3
     // );
 
-    // print_tuple_impl(std::make_tuple(0, 1, 2, 3, 4), std::index_sequence<2, 4>());
-    // constexpr size_t SIZE = CombinationsGenerator::calc_size(seq1, seq2, seq3);
+    // print_tuple_impl(std::make_tuple(0, 1, 2, 3, 4), std::index_sequence<2,
+    // 4>()); constexpr size_t SIZE = CombinationsGenerator::calc_size(seq1,
+    // seq2, seq3);
 
     auto combinations = CombinationsGenerator::generate(seq1, seq3, seq2);
-    auto func = [](const auto&... args) -> int {
+    auto func = [](const auto &...args) -> int {
         return (0 + ... + args); // Fold expression to sum the elements
     };
 
-    auto func2 = [](const auto&... args) -> std::string {
-        return "siema";
-    };
-    auto resultArray = CombinationsGenerator::apply_to_something_weird(func, std::integer_sequence<int, 1, 2, 3>(), seq3, seq2, 4);
-    auto resultArray2 = CombinationsGenerator::apply_to_something_weird(func2, 4, seq1, 2, 3, 5, seq3, seq2, seq2);
+    auto func2 = [](const auto &...args) -> std::string { return "siema"; };
+    auto resultArray = CombinationsGenerator::apply_to_something_weird(
+        func, std::integer_sequence<int, 1, 2, 3>(), seq3, seq2, 4);
+    auto resultArray2 = CombinationsGenerator::apply_to_something_weird(
+        func2, 4, seq1, 2, 3, 5, seq3, seq2, seq2);
     for (auto i : resultArray) {
         std::cout << i << "\n";
     }
@@ -61,22 +67,29 @@ int main() {
         std::cout << "MN\n";
         return 100 * x + 10 * y + z;
     };
-    static_assert(invoke_inteq_details::calc_size(std::integer_sequence<int>(), 2) == 0, "this");
-    auto res = CombinationsGenerator::apply_to_something_weird([](auto...) { return 0; }, std::integer_sequence<int, 1, 2, 3>(), seq1, 5);
-    static_assert(std::ranges::range<decltype(invoke_intseq([](auto...) { return 0; }, std::integer_sequence<int, 1, 2, 3>(), 4, 5))>);
-    auto res2 = CombinationsGenerator::apply_to_something_weird(make_number, std::integer_sequence<int, 1, 2, 3>(), seq1, 5);
+    static_assert(
+        invoke_inteq_details::calc_size(std::integer_sequence<int>(), 2) == 0,
+        "this");
+    auto res = CombinationsGenerator::apply_to_something_weird(
+        [](auto...) { return 0; }, std::integer_sequence<int, 1, 2, 3>(), seq1,
+        5);
+    static_assert(std::ranges::range<decltype(invoke_intseq(
+                      [](auto...) { return 0; },
+                      std::integer_sequence<int, 1, 2, 3>(), 4, 5))>);
+    auto res2 = CombinationsGenerator::apply_to_something_weird(
+        make_number, std::integer_sequence<int, 1, 2, 3>(), seq1, 5);
     std::cout << resultArray.size() << "\n";
-    auto res3 = invoke_intseq(make_number, 1, std::integer_sequence<int, 2, 3>(), std::integer_sequence<int, 4, 5>());
+    // auto res3 = invoke_intseq(make_number, 1, std::integer_sequence<int, 2,
+    // 3>(), std::integer_sequence<int, 4, 5>());
     auto exp = std::array{124, 125, 134, 135};
     std::cout << "\n===========\n";
     std::cout << "Res3";
     std::cout << "\n===========\n";
-    for (auto i : res3) {
-        std::cout << i << "\n";
-    }
+
+    // for (auto i : res3) {
+    //     std::cout << i << "\n";
+    // }
     std::cout << "\n===========\n";
-
-
 
     std::cout << "\n===========\n";
     std::cout << "\n===========\n";
@@ -86,9 +99,24 @@ int main() {
     std::cout << "\n===========\n";
     std::cout << "\n===========\n";
     // std::cout << resultArray2.size() << "\n";
-    // auto resultArray = convert_to_array([](auto a...) { return (a + ...); }, combinations, SIZE);
+    // auto resultArray = convert_to_array([](auto a...) { return (a + ...); },
+    // combinations, SIZE);
+    auto printFirst = [](auto tuple) {
+        std::cout << std::get<0>(tuple) << " " << std::get<1>(tuple) << " "
+                  << std::get<2>(tuple) << " " << std::endl;
+        return std::get<0>(tuple) + std::get<1>(tuple) + std::get<2>(tuple);
+    };
+    std::vector<int> results;
+    std::apply(
+        [&](auto &&...args) { (..., results.push_back(printFirst(args))); },
+        combinations);
 
+    for (auto i : results) {
+        std::cout << i << "\n";
+    }
     // Struct version
+    printFirst(std::get<0>(combinations));
+
     std::cout << "\n===========\n";
     std::cout << std::get<0>(std::get<0>(combinations)) << " ";
     std::cout << std::get<1>(std::get<0>(combinations)) << " ";

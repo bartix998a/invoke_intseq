@@ -100,8 +100,8 @@ constexpr static size_t calc_size(First &&first, Rest &&...rest) {
 template <> constexpr size_t calc_size() { return 1; }
 
 struct Comb_gen {
-    // IMPORTANT: Four of the methods below are for recurrent generation of 
-    // all possible combinations of integer sequences. 
+    // IMPORTANT: Four of the methods below are for recurrent generation of
+    // all possible combinations of integer sequences.
     // They are splitted into two categories:
     // 1. next element to process is an integer sequence
     // 2. next element to process is a single integer
@@ -149,8 +149,8 @@ struct Comb_gen {
 
     // Generates all possible combinations of integer sequences.
     // Ex.:
-    // generate(std::integer_sequence<int, 0, 1>{}, 2, std::integer_sequence<int, 3, 4>{})
-    // will generate
+    // generate(std::integer_sequence<int, 0, 1>{}, 2,
+    // std::integer_sequence<int, 3, 4>{}) will generate
     // {{0, 2, 3}, {0, 2, 4}, {1, 2, 3}, {1, 2, 4}}
     // (where {} denotes a tuple)
     template <typename... Args> constexpr static auto generate(Args... args) {
@@ -159,8 +159,8 @@ struct Comb_gen {
         return generate_impl(acc, args...);
     }
 
-    // Applies function f to a single inner-tuple (so one possible combination of 
-    // a_1, ..., a_n, where every element a_i is an integer, not a sequence).
+    // Applies function f to a single inner-tuple (so one possible combination
+    // of a_1, ..., a_n, where every element a_i is an integer, not a sequence).
     template <class F, class Tuple, size_t... I>
     constexpr static auto apply_to_tuple(F &&f, Tuple &&t,
                                          std::index_sequence<I...>)
@@ -225,10 +225,34 @@ struct Comb_gen {
         -> decltype(auto) {
 
         auto myTuple = generate(args...);
-        using restype = std::invoke_result_t<F, Args...>;
-        std::vector<restype> result{};
-        std::apply([](auto& ...x){(..., result.push_back(x));},  myTuple);
-        return result;
+        if constexpr (std::tuple_size<decltype(myTuple)>::value != 0) {
+            // using restype = std::invoke_result_t<F, decltype(std::get<0>(myTuple))>;
+
+            using restype = decltype(apply_to_tuple(
+                std::forward<F>(f), std::get<0>(myTuple),
+                std::make_index_sequence<std::tuple_size_v<
+                    std::tuple_element_t<0, decltype(myTuple)>>>{}));
+
+            if constexpr (std::is_same_v<void, restype>) {
+                std::apply([&f](auto &...x) { (..., std::apply(f, x)); },
+                           myTuple);
+
+            } else {
+                std::vector<restype> result{};
+                // std::apply(
+                //     [&f, &result](auto &...x) {
+                //         (..., result.push_back(std::apply(f, x)));
+                //     },
+                //     myTuple);
+
+                std::apply(
+                    [&](auto &&...x) {
+                        (..., result.push_back(std::apply(f, x)));
+                    },
+                    myTuple);
+                return result;
+            }
+        }
         // return convert_to_array<F, decltype(myTuple), arraySize>(
         //     std::forward<F>(f), myTuple);
     }
@@ -249,20 +273,20 @@ constexpr auto invoke_intseq(F &&f, Args &&...args) -> decltype(auto) {
 
 // FIXME:
 static_assert(invoke_inteq_details::calc_size(2, 2) == 1, "this");
-static_assert(invoke_inteq_details::calc_size(
-                  7, std::integer_sequence<int, 0, 1>{},
-                  std::integer_sequence<int, 4, 5>{}) == 4,
-              "this");
+static_assert(
+    invoke_inteq_details::calc_size(7, std::integer_sequence<int, 0, 1>{},
+                                    std::integer_sequence<int, 4, 5>{}) == 4,
+    "this");
 static_assert(invoke_inteq_details::calc_size() == 1, "this");
-static_assert(invoke_inteq_details::calc_size(
-                  std::integer_sequence<int, 0, 1>{},
-                  std::integer_sequence<int, 0, 1>{},
-                  std::integer_sequence<int, 0, 1>{}) == 8,
-              "this");
-static_assert(invoke_inteq_details::calc_size(
-                  std::integer_sequence<int, 0, 1>{}, 2) == 2,
-              "this");
-static_assert(invoke_inteq_details::calc_size(
-                  std::integer_sequence<int, 4, 4>{}) == 2,
-              "this");
+static_assert(
+    invoke_inteq_details::calc_size(std::integer_sequence<int, 0, 1>{},
+                                    std::integer_sequence<int, 0, 1>{},
+                                    std::integer_sequence<int, 0, 1>{}) == 8,
+    "this");
+static_assert(
+    invoke_inteq_details::calc_size(std::integer_sequence<int, 0, 1>{}, 2) == 2,
+    "this");
+static_assert(
+    invoke_inteq_details::calc_size(std::integer_sequence<int, 4, 4>{}) == 2,
+    "this");
 #endif // !INVOKE_INTSEQ
