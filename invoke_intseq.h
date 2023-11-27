@@ -47,7 +47,7 @@ struct call_intseq<pos, F,std::tuple<T...>, First, Rest...> {
 
 template <size_t pos, class F, class t, typename First, typename ...Rest>
 struct find_first_struct {
-    constexpr auto findFirst(F&& f, First&& first, Rest&& ...rest){
+    constexpr auto findFirst(t palceholder_tuple,F&& f, First&& first, Rest&& ...rest){
         return;
     }
 };
@@ -60,9 +60,9 @@ struct find_first_struct<pos, F, std::tuple<T...>, First, Rest...> {
 };
 
 
-template <size_t pos, class F, class ...T, typename seq, seq ...vals,typename First, typename ...Rest>
-struct find_first_struct<pos, F, std::tuple<T...>, std::integer_sequence<seq,vals...>,First, Rest...> {
-    constexpr auto findFirst(std::tuple<T...> t, F&& f, First&& first, Rest&& ...rest){
+template <size_t pos, class F, class ...T, typename seq, seq ...vals, typename ...Rest>
+struct find_first_struct<pos, F, std::tuple<T...>, std::integer_sequence<seq,vals...>, Rest...> {
+    constexpr auto findFirst(std::tuple<T...> t, F&& f, std::integer_sequence<seq,vals...> s, Rest&& ...rest){
         return std::array<std::result_of<decltype(f)()>, sizeof... (vals)> (
             call_intseq<pos - 1, F, T..., std::integral_constant<T, vals>, Rest...>(t ,f, std::integral_constant<T, vals>::value, rest)...);
     }
@@ -115,7 +115,7 @@ constexpr auto invoke_intseq(F &&f, Args &&...args) {
         return std::invoke(f, args...);
     } else {
         return invoke_inteq_details::find_first_struct<
-            0, F, Args... ,Args...>::findFirst(std::tuple<Args...>(args...), f, args...);
+            0, F, std::tuple<Args...> ,Args...>::findFirst(std::tuple<Args...>(args...), f, args...);
     }
 }
 #endif // !INVOKE_INTSEQ
