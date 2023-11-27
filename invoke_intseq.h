@@ -16,31 +16,38 @@ constexpr auto invoke_intseq(F &&f, Args &&...args) -> decltype(auto);
 
 namespace invoke_inteq_details {
 
-template <typename T> struct is_integer_sequence : std::false_type {};
+template <typename T> struct is_integer_sequence : std::false_type {
+    using type = T;
+};
 
 template <typename T, T... vals>
 struct is_integer_sequence<std::integer_sequence<T, vals...>> : std::true_type {
+    using type = T;
 };
 
 // checks if any of the others are an integer_sequence
 template <class... others>
 struct any_match : std::disjunction<is_integer_sequence<others>...> {};
 
-
-
 // Trait to check if an std::integer_sequence is empty
-template <typename T>
-struct is_empty_integer_sequence : std::false_type {};
+template <typename T> struct is_empty_integer_sequence : std::false_type {};
 
 template <typename T>
 struct is_empty_integer_sequence<std::integer_sequence<T>> : std::true_type {};
 
 // Check if any of the arguments is an empty integer sequence
 template <class... others>
-struct any_empty_integer_sequence : std::disjunction<is_empty_integer_sequence<others>...> {};
+struct any_empty_integer_sequence
+    : std::disjunction<is_empty_integer_sequence<others>...> {};
 
+// START
+// Now, create a utility to transform a tuple of arguments
+template <typename F, typename... Args> struct transform_arg_types {
+    using type = std::invoke_result_t<F, typename is_integer_sequence<Args>::type...>;
 
+};
 
+// STOP
 
 template <size_t pos, class F, class t, typename First, typename... Rest>
 struct call_intseq {
@@ -242,7 +249,8 @@ struct Comb_gen {
 
         auto myTuple = generate(args...);
         if constexpr (std::tuple_size<decltype(myTuple)>::value != 0) {
-            // using restype = std::invoke_result_t<F, decltype(std::get<0>(myTuple))>;
+            // using restype = std::invoke_result_t<F,
+            // decltype(std::get<0>(myTuple))>;
 
             using restype = decltype(apply_to_tuple(
                 std::forward<F>(f), std::get<0>(myTuple),
@@ -277,15 +285,17 @@ struct Comb_gen {
 } // namespace invoke_inteq_details
 template <class F, class... Args>
 constexpr auto invoke_intseq(F &&f, Args &&...args) -> decltype(auto) {
+    using result_type = invoke_inteq_details::transform_arg_types< decltype(f), Args...>::type;
     if constexpr (!invoke_inteq_details::any_match<Args...>::value ||
                   sizeof...(args) == 0) {
         // Direct invocation for cases where special processing is not required
         return std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
-    } else if constexpr (!invoke_inteq_details::any_empty_integer_sequence<Args...>::value) {
+    } else if constexpr (!invoke_inteq_details::any_empty_integer_sequence<
+                             Args...>::value) {
         return invoke_inteq_details::Comb_gen::apply_to_comb(
             std::forward<F>(f), std::forward<Args>(args)...);
     } else {
-        return std::vector<int>{};
+        return std::vector<result_type>{};
     }
 }
 
