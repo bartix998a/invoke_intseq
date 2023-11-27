@@ -1,4 +1,5 @@
 #include "templates_test.h"
+#include "invoke_intseq.h"
 #include <utility>
 // Helper function to print an individual tuple
 template <typename Tuple, std::size_t... Is>
@@ -28,9 +29,9 @@ void printCombinations(const std::tuple<Tuples...>& combinations) {
 }
 
 int main() {
-    auto seq1 = std::integer_sequence<int, 0, 1>{};
-    auto seq2 = std::integer_sequence<int, 6, 9>{};
-    auto seq3 = std::integer_sequence<int, 4, 5>{};
+    auto seq1 = std::integer_sequence<int, 0, 1, 9>{};
+    auto seq2 = std::integer_sequence<int, 6, 9, 8>{};
+    auto seq3 = std::integer_sequence<int, 4, 5, 3>{};
 
     // Start measuring time for compile-time execution
     // print_all_combinations(
@@ -47,19 +48,23 @@ int main() {
         return (0 + ... + args); // Fold expression to sum the elements
     };
 
-    auto func2 = [](const auto&... args) {
+    auto func2 = [](const auto&... args) -> std::string {
+        return "siema";
     };
-    auto resultArray = CombinationsGenerator::apply_to_something_weird(func, seq1, seq3, seq2, seq1, seq2, 4);
-    // auto resultArray2 = CombinationsGenerator::apply_to_something_weird(func2, seq1, seq3, seq2, seq1, seq2, 4);
+    auto resultArray = CombinationsGenerator::apply_to_something_weird(func, std::integer_sequence<int, 1, 2, 3>(), seq3, seq2, 4);
+    auto resultArray2 = CombinationsGenerator::apply_to_something_weird(func2, 4, seq1, 2, 3, 5, seq3, seq2, seq2);
     for (auto i : resultArray) {
-        std::cout << i << " ";
+        std::cout << i << "\n";
     }
+
+    auto res = CombinationsGenerator::apply_to_something_weird([](auto...) { return 0; }, std::integer_sequence<int, 1, 2, 3>(), seq1, 5);
+    static_assert(std::ranges::range<decltype(invoke_intseq([](auto...) { return 0; }, std::integer_sequence<int, 1, 2, 3>(), 4, 5))>);
     std::cout << resultArray.size() << "\n";
         
-    // for (auto i : resultArray2) {
-    //     std::cout << i << " ";
-    // }
-    // std::cout << resultArray2.size() << "\n";
+    for (auto i : resultArray2) {
+        std::cout << i << "\n";
+    }
+    std::cout << resultArray2.size() << "\n";
     // auto resultArray = convert_to_array([](auto a...) { return (a + ...); }, combinations, SIZE);
 
     // Struct version

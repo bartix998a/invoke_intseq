@@ -79,12 +79,9 @@ int main() {
                            [](auto...) {},
                            std::integer_sequence<int, 1, 2, 3>(), 4, 5)),
                        void>);
-    static_assert(std::ranges::range<decltype(invoke_intseq(
-                      [](auto...) { return 0; },
-                      std::integer_sequence<int, 1, 2, 3>(), 4, 5))>);
+    static_assert(std::ranges::range<decltype(invoke_intseq([](auto...) { return 0; }, std::integer_sequence<int, 1, 2, 3>(), 4, 5))>);
     static_assert(
-        std::is_same_v<std::ranges::range_value_t<decltype(invoke_intseq(
-                           [](auto...) { return 0; },
+        std::is_same_v<std::ranges::range_value_t<decltype(invoke_intseq( [](auto...) { return 0; },
                            std::integer_sequence<int, 1, 2, 3>(), 4, 5))>,
                        int>);
 
