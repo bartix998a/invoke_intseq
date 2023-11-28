@@ -90,7 +90,7 @@ template <typename FResult> struct Comb_gen {
     // Base for category 2
     template <typename T, typename... Accumulated>
     constexpr static auto generate_impl(const std::tuple<Accumulated...> &acc,
-                                        T val) {
+                                        T&& val) {
         return std::make_tuple(std::tuple_cat(acc, std::make_tuple(val)));
     }
 
@@ -98,10 +98,10 @@ template <typename FResult> struct Comb_gen {
     // Recursive case for category 1
     template <typename T, typename... TailSeq, typename... Accumulated>
     constexpr static auto generate_impl(const std::tuple<Accumulated...> &acc,
-                                        T val, TailSeq... rest) {
+                                        T val, TailSeq&&... rest) {
         // Make one tuple from multiple tuples
         return generate_impl(std::tuple_cat(acc, std::make_tuple(val)),
-                             rest...);
+                             std::forward<TailSeq>(rest)...);
     }
 
     // Recursive case - handles multiple integer sequences
@@ -110,12 +110,12 @@ template <typename FResult> struct Comb_gen {
               typename... Accumulated>
     constexpr static auto generate_impl(const std::tuple<Accumulated...> &acc,
                                         std::integer_sequence<T, HeadInts...>,
-                                        TailSeq... rest) {
+                                        TailSeq&&... rest) {
         // Make one tuple from multiple tuples
         return std::apply(
             [](auto &&...args) { return std::tuple_cat(args...); },
             std::make_tuple(generate_impl(
-                std::tuple_cat(acc, std::make_tuple(std::integral_constant<T, HeadInts>())), rest...)...));
+                std::tuple_cat(acc, std::make_tuple(std::integral_constant<T, HeadInts>())), std::forward<TailSeq>(rest)...)...));
     }
 
     // Generates all possible combinations of integer sequences.
