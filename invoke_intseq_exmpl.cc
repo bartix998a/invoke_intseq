@@ -174,7 +174,7 @@ int main() {
 
     std::cout << "Foo: auto&" << std::endl;
     // Nie powinno się kompilować: rvalue nie może być przekazywane jako auto&.
-    // FIXME: for now it compiles...
+    // FIXME: for now it does NOT COMPILE, but CHECK IN THE FUTURE
     // invoke_intseq([](auto&... a) {Print(a...);}, Foo(), foo,
     // std::make_index_sequence<3>());
     invoke_intseq([](auto &...a) { Print(a...); }, foo, foo);
