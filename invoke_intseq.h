@@ -49,58 +49,6 @@ template <typename F, typename... Args> struct transform_arg_types {
 
 // STOP
 
-template <size_t pos, class F, class t, typename First, typename... Rest>
-struct call_intseq {
-    constexpr auto expand_tuple(F &&f, First &&first, Rest &&...rest) {
-        return;
-    }
-};
-
-template <size_t pos, class F, typename... T, typename First, typename... Rest>
-struct call_intseq<pos, F, std::tuple<T...>, First, Rest...> {
-    constexpr auto expand_tuple(std::tuple<T...> t, F &&f, First &&first,
-                                Rest &&...rest) {
-        if constexpr (pos > 0) {
-            return expand_tuple<pos - 1, F, t,
-                                std::result_of<decltype(get<pos>(t))>, Rest...>(
-                f, get<pos>(t), rest...);
-        } else {
-            return invoke_intseq<F, std::result_of<decltype(get<pos>(t))>,
-                                 Rest...>(f, get<pos>(t), rest...);
-        }
-    }
-};
-
-template <size_t pos, class F, class t, typename First, typename... Rest>
-struct find_first_struct {
-    constexpr auto findFirst(t palceholder_tuple, F &&f, First &&first,
-                             Rest &&...rest) {
-        return;
-    }
-};
-
-template <size_t pos, class F, class... T, typename First, typename... Rest>
-struct find_first_struct<pos, F, std::tuple<T...>, First, Rest...> {
-    constexpr auto findFirst(std::tuple<T...> t, F &&f, First &&first,
-                             Rest &&...rest) {
-        return findFirst<pos + 1, F, T..., Rest...>(t, f, rest...);
-    }
-};
-
-template <size_t pos, class F, class... T, typename seq, seq... vals,
-          typename... Rest>
-struct find_first_struct<pos, F, std::tuple<T...>,
-                         std::integer_sequence<seq, vals...>, Rest...> {
-    constexpr auto findFirst(std::tuple<T...> t, F &&f,
-                             std::integer_sequence<seq, vals...> s,
-                             Rest &&...rest) {
-        return std::array<std::result_of<decltype(f)()>, sizeof...(vals)>(
-            call_intseq<pos - 1, F, T..., std::integral_constant<T, vals>,
-                        Rest...>(t, f, std::integral_constant<T, vals>::value,
-                                 rest)...);
-    }
-};
-
 // Forward declaration with universal references
 template <typename... Args> constexpr static size_t calc_size(Args &&...args);
 
@@ -185,12 +133,12 @@ template <typename FResult> struct Comb_gen {
     constexpr static auto apply_to_comb(F &&f, Args &&...args)
         -> decltype(auto) {
 
-        auto myTuple = generate(args...);
-        if constexpr (std::tuple_size<decltype(myTuple)>::value != 0) {
+        auto invoke_results = generate(args...);
+        if constexpr (std::tuple_size<decltype(invoke_results)>::value != 0) {
 
             if constexpr (std::is_same_v<void, FResult>) {
                 std::apply([&f](auto &...x) { (..., std::apply(f, x)); },
-                           myTuple);
+                           invoke_results);
 
             } else {
                 std::vector<FResult> result{};
@@ -199,7 +147,7 @@ template <typename FResult> struct Comb_gen {
                     [&](auto &&...x) {
                         (..., result.push_back(std::apply(f, x)));
                     },
-                    myTuple);
+                    invoke_results);
                 return result;
             }
         }
