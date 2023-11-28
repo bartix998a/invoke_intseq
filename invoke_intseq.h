@@ -22,7 +22,7 @@ template <typename T> struct is_integer_sequence : std::false_type {
 
 template <typename T, T... vals>
 struct is_integer_sequence<std::integer_sequence<T, vals...>> : std::true_type {
-    using type = T;
+    using type = std::integral_constant<T, 0>;
 };
 
 // checks if any of the others are an integer_sequence
@@ -84,7 +84,7 @@ template <typename FResult> struct Comb_gen {
     template <typename T, T... Ints, typename... Accumulated>
     constexpr static auto generate_impl(const std::tuple<Accumulated...> &acc,
                                         std::integer_sequence<T, Ints...>) {
-        return std::make_tuple(std::tuple_cat(acc, std::make_tuple(Ints))...);
+        return std::make_tuple(std::tuple_cat(acc, std::make_tuple(std::integral_constant<T, Ints>()))...);
     }
 
     // Base for category 2
@@ -115,7 +115,7 @@ template <typename FResult> struct Comb_gen {
         return std::apply(
             [](auto &&...args) { return std::tuple_cat(args...); },
             std::make_tuple(generate_impl(
-                std::tuple_cat(acc, std::make_tuple(HeadInts)), rest...)...));
+                std::tuple_cat(acc, std::make_tuple(std::integral_constant<T, HeadInts>())), rest...)...));
     }
 
     // Generates all possible combinations of integer sequences.
