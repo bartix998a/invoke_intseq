@@ -124,7 +124,7 @@ template <typename FResult> struct Comb_gen {
     // std::integer_sequence<int, 3, 4>{}) will generate
     // {{0, 2, 3}, {0, 2, 4}, {1, 2, 3}, {1, 2, 4}}
     // (where {} denotes a tuple)
-    template <typename... Args> constexpr static auto generate(Args... args) {
+    template <typename... Args> constexpr static auto generate(Args&&... args) {
         auto acc = std::tuple<>{};
         return generate_impl(acc, args...);
     }
@@ -133,11 +133,11 @@ template <typename FResult> struct Comb_gen {
     constexpr static auto apply_to_comb(F &&f, Args &&...args)
         -> decltype(auto) {
 
-        auto invoke_results = generate(args...);
+        auto invoke_results = generate(std::forward<Args>(args)...);
         if constexpr (std::tuple_size<decltype(invoke_results)>::value != 0) {
 
             if constexpr (std::is_same_v<void, FResult>) {
-                std::apply([&f](auto &...x) { (..., std::apply(f, x)); },
+                std::apply([&f](auto &...x) { (..., std::apply(std::forward<F>(f), x)); },
                            invoke_results);
 
             } else if constexpr (!std::is_reference_v<FResult>) {
@@ -145,7 +145,7 @@ template <typename FResult> struct Comb_gen {
 
                 std::apply(
                     [&](auto &&...x) {
-                        (..., result.push_back(std::apply(f, x)));
+                        (..., result.push_back(std::apply(std::forward<F>(f), x)));
                     },
                     invoke_results);
                 return result;
@@ -157,9 +157,9 @@ template <typename FResult> struct Comb_gen {
                 // result.push_back();
 
                 std::apply(
-                    [&](auto &&...x) {
+                    [&](auto&&...x) {
                         (..., result.push_back(
-                            (std::apply(f, x))
+                            (std::apply(std::forward<F>(f), x))
                         ));
                     },
                     invoke_results);
