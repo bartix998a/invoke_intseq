@@ -98,9 +98,9 @@ template <typename FResult> struct Comb_gen {
     // Recursive case for category 1
     template <typename T, typename... TailSeq, typename... Accumulated>
     constexpr static auto generate_impl(const std::tuple<Accumulated...> &acc,
-                                        T val, TailSeq&&... rest) {
+                                        T&& val, TailSeq&&... rest) {
         // Make one tuple from multiple tuples
-        return generate_impl(std::tuple_cat(acc, std::make_tuple(val)),
+        return generate_impl(std::tuple_cat(acc, std::make_tuple(std::forward<T>(val))),
                              std::forward<TailSeq>(rest)...);
     }
 
@@ -137,7 +137,7 @@ template <typename FResult> struct Comb_gen {
         if constexpr (std::tuple_size<decltype(invoke_results)>::value != 0) {
 
             if constexpr (std::is_same_v<void, FResult>) {
-                std::apply([&f](auto &...x) { (..., std::apply(std::forward<F>(f), x)); },
+                std::apply([&f](auto &&...x) { (..., std::apply(std::forward<F>(f), x)); },
                            invoke_results);
 
             } else if constexpr (!std::is_reference_v<FResult>) {
