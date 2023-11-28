@@ -140,12 +140,27 @@ template <typename FResult> struct Comb_gen {
                 std::apply([&f](auto &...x) { (..., std::apply(f, x)); },
                            invoke_results);
 
-            } else {
+            } else if constexpr (!std::is_reference_v<FResult>) {
                 std::vector<FResult> result{};
 
                 std::apply(
                     [&](auto &&...x) {
                         (..., result.push_back(std::apply(f, x)));
+                    },
+                    invoke_results);
+                return result;
+            } else {
+                using temp_for_sure_fixme =
+                    std::remove_reference_t<FResult>;
+                std::vector<temp_for_sure_fixme> result{};
+                // FIXME: just a test:forward
+                // result.push_back();
+
+                std::apply(
+                    [&](auto &&...x) {
+                        (..., result.push_back(
+                            (std::apply(f, x))
+                        ));
                     },
                     invoke_results);
                 return result;

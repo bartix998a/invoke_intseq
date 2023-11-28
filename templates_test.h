@@ -193,10 +193,11 @@ struct CombinationsGenerator {
     }
 
     template <class F, typename... Seqs>
-    constexpr static auto apply_to_something_weird(F &&f, Seqs &&... seqs) {
+    constexpr static auto apply_to_something_weird(F &&f, Seqs &&...seqs) {
         auto myTuple = generate(seqs...);
         constexpr size_t arraySize = std::tuple_size<decltype(myTuple)>::value;
-        return convert_to_array<F, decltype(myTuple), arraySize>( std::forward<F>(f), myTuple);
+        return convert_to_array<F, decltype(myTuple), arraySize>(
+            std::forward<F>(f), myTuple);
     }
 };
 #endif // TEST
