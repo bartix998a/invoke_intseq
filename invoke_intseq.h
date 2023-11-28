@@ -43,8 +43,8 @@ struct any_empty_integer_sequence
 // START
 // Now, create a utility to transform a tuple of arguments
 template <typename F, typename... Args> struct transform_arg_types {
-    using type = std::invoke_result_t<F, typename is_integer_sequence<Args>::type...>;
-
+    using type =
+        std::invoke_result_t<F, typename is_integer_sequence<Args>::type...>;
 };
 
 // STOP
@@ -122,7 +122,7 @@ constexpr static size_t calc_size(First &&first, Rest &&...rest) {
 
 template <> constexpr size_t calc_size() { return 1; }
 
-struct Comb_gen {
+template <typename FResult> struct Comb_gen {
     // IMPORTANT: Four of the methods below are for recurrent generation of
     // all possible combinations of integer sequences.
     // They are splitted into two categories:
@@ -178,69 +178,7 @@ struct Comb_gen {
     // (where {} denotes a tuple)
     template <typename... Args> constexpr static auto generate(Args... args) {
         auto acc = std::tuple<>{};
-        size_t size = calc_size(args...);
         return generate_impl(acc, args...);
-    }
-
-    // Applies function f to a single inner-tuple (so one possible combination
-    // of a_1, ..., a_n, where every element a_i is an integer, not a sequence).
-    template <class F, class Tuple, size_t... I>
-    constexpr static auto apply_to_tuple(F &&f, Tuple &&t,
-                                         std::index_sequence<I...>)
-        -> decltype(auto) {
-        if constexpr (std::is_same_v<void, decltype(f(std::get<I>(t)...))>) {
-            // If F returns void, just invoke it
-            (..., f(std::get<I>(std::forward<Tuple>(t))));
-        } else {
-            // Otherwise, return the result
-            return f(std::get<I>(std::forward<Tuple>(t))...);
-        }
-    }
-
-    template <size_t Index, size_t Size, class F, class Array,
-              class two_dim_tuple>
-    constexpr static void process_tuples(F &&f, Array &arr,
-                                         const two_dim_tuple &t) {
-        if constexpr (Index < Size) {
-            arr[Index] = apply_to_tuple(
-                std::forward<F>(f), std::get<Index>(t),
-                std::make_index_sequence<std::tuple_size_v<
-                    std::tuple_element_t<Index, two_dim_tuple>>>{});
-            process_tuples<Index + 1, Size>(std::forward<F>(f), arr, t);
-        }
-    }
-
-    template <size_t Index, size_t Size, class F, class two_dim_tuple>
-    constexpr static void process_tuples(F &&f, const two_dim_tuple &t) {
-        if constexpr (Index < Size) {
-            apply_to_tuple(std::forward<F>(f), std::get<Index>(t),
-                           std::make_index_sequence<std::tuple_size_v<
-                               std::tuple_element_t<Index, two_dim_tuple>>>{});
-            process_tuples<Index + 1, Size>(std::forward<F>(f), t);
-        }
-    }
-
-    template <class F, class two_dim_tuple, size_t Size>
-    constexpr static auto convert_to_array(F &&f, const two_dim_tuple &t)
-        -> decltype(auto) {
-        if constexpr (std::is_same_v<
-                          void, decltype(apply_to_tuple(
-                                    std::forward<F>(f), std::get<0>(t),
-                                    std::make_index_sequence<
-                                        std::tuple_size_v<std::tuple_element_t<
-                                            0, two_dim_tuple>>>{}))>) {
-            // If F returns void, just process tuples without storing
-            process_tuples<0, Size>(std::forward<F>(f), t);
-        } else {
-            // Otherwise, process tuples and store results in an array
-            using ReturnType = decltype(apply_to_tuple(
-                std::forward<F>(f), std::get<0>(t),
-                std::make_index_sequence<std::tuple_size_v<
-                    std::tuple_element_t<0, two_dim_tuple>>>{}));
-            std::array<ReturnType, Size> arr{};
-            process_tuples<0, Size>(std::forward<F>(f), arr, t);
-            return arr;
-        }
     }
 
     template <class F, typename... Args>
@@ -249,25 +187,13 @@ struct Comb_gen {
 
         auto myTuple = generate(args...);
         if constexpr (std::tuple_size<decltype(myTuple)>::value != 0) {
-            // using restype = std::invoke_result_t<F,
-            // decltype(std::get<0>(myTuple))>;
 
-            using restype = decltype(apply_to_tuple(
-                std::forward<F>(f), std::get<0>(myTuple),
-                std::make_index_sequence<std::tuple_size_v<
-                    std::tuple_element_t<0, decltype(myTuple)>>>{}));
-
-            if constexpr (std::is_same_v<void, restype>) {
+            if constexpr (std::is_same_v<void, FResult>) {
                 std::apply([&f](auto &...x) { (..., std::apply(f, x)); },
                            myTuple);
 
             } else {
-                std::vector<restype> result{};
-                // std::apply(
-                //     [&f, &result](auto &...x) {
-                //         (..., result.push_back(std::apply(f, x)));
-                //     },
-                //     myTuple);
+                std::vector<FResult> result{};
 
                 std::apply(
                     [&](auto &&...x) {
@@ -277,22 +203,23 @@ struct Comb_gen {
                 return result;
             }
         }
-        // return convert_to_array<F, decltype(myTuple), arraySize>(
-        //     std::forward<F>(f), myTuple);
     }
 };
 
 } // namespace invoke_inteq_details
+
 template <class F, class... Args>
 constexpr auto invoke_intseq(F &&f, Args &&...args) -> decltype(auto) {
-    using result_type = invoke_inteq_details::transform_arg_types< decltype(f), Args...>::type;
+    using result_type =
+        invoke_inteq_details::transform_arg_types<decltype(f), Args...>::type;
+
     if constexpr (!invoke_inteq_details::any_match<Args...>::value ||
                   sizeof...(args) == 0) {
         // Direct invocation for cases where special processing is not required
         return std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
     } else if constexpr (!invoke_inteq_details::any_empty_integer_sequence<
                              Args...>::value) {
-        return invoke_inteq_details::Comb_gen::apply_to_comb(
+        return invoke_inteq_details::Comb_gen<result_type>::apply_to_comb(
             std::forward<F>(f), std::forward<Args>(args)...);
     } else {
         return std::vector<result_type>{};
