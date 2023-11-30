@@ -91,7 +91,8 @@ template <typename FResult> struct Comb_gen {
     template <typename T, typename... Accumulated>
     constexpr static auto generate_impl(const std::tuple<Accumulated...> &acc,
                                         T&& val) {
-        return std::make_tuple(std::tuple_cat(acc, std::make_tuple(val)));
+        std::tuple<T&&> tup(std::forward<T>(val));
+        return std::make_tuple(std::tuple_cat(acc, tup));
     }
 
     // Recursive case - handles multiple integer sequences
@@ -100,7 +101,8 @@ template <typename FResult> struct Comb_gen {
     constexpr static auto generate_impl(const std::tuple<Accumulated...> &acc,
                                         T&& val, TailSeq&&... rest) {
         // Make one tuple from multiple tuples
-        return generate_impl(std::tuple_cat(acc, std::make_tuple(std::forward<T>(val))),
+        std::tuple<T&&> tup(std::forward<T>(val));
+        return generate_impl(std::tuple_cat(acc, tup),
                              std::forward<TailSeq>(rest)...);
     }
 
