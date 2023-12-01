@@ -82,27 +82,27 @@ template <typename FResult> struct Comb_gen {
     // Base case for the recursion - when only one sequence is left
     // Base for category 1
     template <typename T, T... Ints, typename... Accumulated>
-    constexpr static auto generate_impl(const std::tuple<Accumulated...> &acc,
+    constexpr static auto generate_impl(const std::tuple<Accumulated&&...> &acc,
                                         std::integer_sequence<T, Ints...>) {
-        return std::make_tuple(std::tuple_cat(acc, std::make_tuple(std::integral_constant<T, Ints>()))...);
+        return std::make_tuple(std::tuple_cat(std::forward<std::tuple<Accumulated&&...>>(acc), std::make_tuple(std::integral_constant<T, Ints>()))...);
     }
 
     // Base for category 2
     template <typename T, typename... Accumulated>
-    constexpr static auto generate_impl(const std::tuple<Accumulated...> &acc,
+    constexpr static auto generate_impl(const std::tuple<Accumulated&&...> &acc,
                                         T&& val) {
         std::tuple<T&&> tup(std::forward<T>(val));
-        return std::make_tuple(std::tuple_cat(acc, tup));
+        return std::make_tuple(std::tuple_cat(std::forward<std::tuple<Accumulated&&...>>(acc), std::forward<std::tuple<T&&>>(tup)));
     }
 
     // Recursive case - handles multiple integer sequences
     // Recursive case for category 1
     template <typename T, typename... TailSeq, typename... Accumulated>
-    constexpr static auto generate_impl(const std::tuple<Accumulated...> &acc,
+    constexpr static auto generate_impl(const std::tuple<Accumulated&&...> &acc,
                                         T&& val, TailSeq&&... rest) {
         // Make one tuple from multiple tuples
         std::tuple<T&&> tup(std::forward<T>(val));
-        return generate_impl(std::tuple_cat(acc, tup),
+        return generate_impl(std::tuple_cat(std::forward<std::tuple<Accumulated&&...>>(acc), std::forward<std::tuple<T&&>>(tup)),
                              std::forward<TailSeq>(rest)...);
     }
 
@@ -110,14 +110,16 @@ template <typename FResult> struct Comb_gen {
     // Recursive case for category 2
     template <typename T, T... HeadInts, typename... TailSeq,
               typename... Accumulated>
-    constexpr static auto generate_impl(const std::tuple<Accumulated...> &acc,
+    constexpr static auto generate_impl(const std::tuple<Accumulated&&...> &acc,
                                         std::integer_sequence<T, HeadInts...>,
                                         TailSeq&&... rest) {
         // Make one tuple from multiple tuples
         return std::apply(
             [](auto &&...args) { return std::tuple_cat(args...); },
             std::make_tuple(generate_impl(
-                std::tuple_cat(acc, std::make_tuple(std::integral_constant<T, HeadInts>())), std::forward<TailSeq>(rest)...)...));
+                std::tuple_cat(std::forward<std::tuple<Accumulated&&...>>(acc),
+                               std::tuple<std::integral_constant<T, HeadInts>>(std::integral_constant<T, HeadInts>())),
+                std::forward<TailSeq>(rest)...)...));
     }
 
     // Generates all possible combinations of integer sequences.
@@ -128,7 +130,7 @@ template <typename FResult> struct Comb_gen {
     // (where {} denotes a tuple)
     template <typename... Args> constexpr static auto generate(Args&&... args) {
         auto acc = std::tuple<>{};
-        return generate_impl(acc, args...);
+        return generate_impl(acc, std::forward<Args>(args)...);
     }
 
     template <class F, typename... Args>
@@ -140,7 +142,7 @@ template <typename FResult> struct Comb_gen {
 
             if constexpr (std::is_same_v<void, FResult>) {
                 std::apply([&f](auto &&...x) { (..., std::apply(std::forward<F>(f), x)); },
-                           invoke_results);
+                           std::forward<>(invoke_results));
 
             } else if constexpr (!std::is_reference_v<FResult>) {
                 std::vector<FResult> result{};
@@ -149,7 +151,7 @@ template <typename FResult> struct Comb_gen {
                     [&](auto &&...x) {
                         (..., result.push_back(std::apply(std::forward<F>(f), x)));
                     },
-                    invoke_results);
+                    std::forward<>(invoke_results));
                 return result;
             } else {
                 using temp_for_sure_fixme =
@@ -164,7 +166,7 @@ template <typename FResult> struct Comb_gen {
                             (std::apply(std::forward<F>(f), x))
                         ));
                     },
-                    invoke_results);
+                    std::forward<>(invoke_results));
                 return result;
             }
         }
