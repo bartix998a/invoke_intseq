@@ -81,46 +81,63 @@ template <typename FResult> struct Comb_gen {
 
     // Base case for the recursion - when only one sequence is left
     // Base for category 1
+
+    template <typename T1, typename T2, typename... TailSeq>
+    struct gen_impl_str{
+        constexpr static auto generate_impl(){
+            return;// no tuple so no nothing essentially
+        }
+    };
+
     template <typename T, T... Ints, typename... Accumulated>
-    constexpr static auto generate_impl(const std::tuple<Accumulated&&...> &acc,
-                                        std::integer_sequence<T, Ints...>) {
-        return std::make_tuple(std::tuple_cat(std::forward<std::tuple<Accumulated&&...>>(acc), std::make_tuple(std::integral_constant<T, Ints>()))...);
-    }
+    struct gen_impl_str<std::tuple<Accumulated&&...>, std::integer_sequence<T, Ints...>>{
+        constexpr auto generate_impl(const std::tuple<Accumulated&&...> &acc, std::integer_sequence<T, Ints...>) {
+            return std::make_tuple(std::tuple_cat(std::forward<std::tuple<Accumulated&&...>>(acc), std::make_tuple(std::integral_constant<T, Ints>()))...);
+        }
+    };
 
     // Base for category 2
     template <typename T, typename... Accumulated>
-    constexpr static auto generate_impl(const std::tuple<Accumulated&&...> &acc,
-                                        T&& val) {
-        std::tuple<T&&> tup(std::forward<T>(val));
-        return std::make_tuple(std::tuple_cat(std::forward<std::tuple<Accumulated&&...>>(acc), std::forward<std::tuple<T&&>>(tup)));
-    }
-
-    // Recursive case - handles multiple integer sequences
-    // Recursive case for category 1
-    template <typename T, typename... TailSeq, typename... Accumulated>
-    constexpr static auto generate_impl(const std::tuple<Accumulated&&...> &acc,
-                                        T&& val, TailSeq&&... rest) {
-        // Make one tuple from multiple tuples
-        std::tuple<T&&> tup(std::forward<T>(val));
-        return generate_impl(std::tuple_cat(std::forward<std::tuple<Accumulated&&...>>(acc), std::forward<std::tuple<T&&>>(tup)),
-                             std::forward<TailSeq>(rest)...);
-    }
+    struct gen_impl_str<std::tuple<Accumulated&&...>, T>{
+        constexpr static auto generate_impl(const std::tuple<Accumulated&&...> &acc,
+                                            T&& val) {
+            std::tuple<T&&> tup(std::forward<T>(val));
+            return std::make_tuple(std::tuple_cat(std::forward<std::tuple<Accumulated&&...>>(acc), std::forward<std::tuple<T&&>>(tup)));
+        }
+    };
 
     // Recursive case - handles multiple integer sequences
     // Recursive case for category 2
     template <typename T, T... HeadInts, typename... TailSeq,
               typename... Accumulated>
-    constexpr static auto generate_impl(const std::tuple<Accumulated&&...> &acc,
-                                        std::integer_sequence<T, HeadInts...>,
-                                        TailSeq&&... rest) {
-        // Make one tuple from multiple tuples
-        return std::apply(
-            [](auto &&...args) { return std::tuple_cat(args...); },
-            std::make_tuple(generate_impl(
-                std::tuple_cat(std::forward<std::tuple<Accumulated&&...>>(acc),
-                               std::tuple<std::integral_constant<T, HeadInts>>(std::integral_constant<T, HeadInts>())),
-                std::forward<TailSeq>(rest)...)...));
-    }
+    struct gen_impl_str<std::tuple<Accumulated&&...>, std::integer_sequence<T, HeadInts...>, TailSeq...>{
+        constexpr static auto generate_impl(const std::tuple<Accumulated&&...> &acc,
+                                            std::integer_sequence<T, HeadInts...>,
+                                            TailSeq&&... rest) {
+            // Make one tuple from multiple tuples
+            return std::apply(
+                [](auto &&...args) { return std::tuple_cat(args...); },
+                std::make_tuple((gen_impl_str<std::tuple<Accumulated&&..., std::integral_constant<T, HeadInts>&&>, TailSeq...>::generate_impl(
+                    std::tuple_cat(std::forward<std::tuple<Accumulated&&...>>(acc),
+                                   std::tuple<std::integral_constant<T, HeadInts>>(std::integral_constant<T, HeadInts>())),
+                    std::forward<TailSeq>(rest)...))...));
+        }
+    };
+
+    template <typename... Accumulated, typename T, typename... TailSeq>
+    struct gen_impl_str<std::tuple<Accumulated&&...>, T, TailSeq...>{
+        constexpr static auto generate_impl(const std::tuple<Accumulated&&...> &acc,
+                                            T&& val, TailSeq&&... rest) {
+            // Make one tuple from multiple tuples
+            std::tuple<T&&> tup(std::forward<T>(val));
+            return gen_impl_str<std::tuple<Accumulated&&..., T&&>, TailSeq...>::generate_impl(std::tuple_cat(std::forward<std::tuple<Accumulated&&...>>(acc),
+                                                std::forward<std::tuple<T&&>>(tup)),
+                                 std::forward<TailSeq>(rest)...);
+        }
+    };
+
+
+
 
     // Generates all possible combinations of integer sequences.
     // Ex.:
@@ -130,7 +147,7 @@ template <typename FResult> struct Comb_gen {
     // (where {} denotes a tuple)
     template <typename... Args> constexpr static auto generate(Args&&... args) {
         auto acc = std::tuple<>{};
-        return generate_impl(acc, std::forward<Args>(args)...);
+        return gen_impl_str<std::tuple<>, Args...>::generate_impl(acc, std::forward<Args>(args)...);
     }
 
     template <class F, typename... Args>
