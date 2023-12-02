@@ -91,18 +91,15 @@ template <typename FResult> struct Comb_gen {
 
     template <typename... Accumulated, typename T, typename... TailSeq>
     struct gen_impl_str<std::tuple<Accumulated...>, T, TailSeq...> {
-        constexpr static auto
-        generate_impl(std::tuple<Accumulated...> &&acc, T &&val,
-                      TailSeq &&...rest) {
+        constexpr static auto generate_impl(std::tuple<Accumulated...> &&acc,
+                                            T &&val, TailSeq &&...rest) {
             // Make one tuple from multiple tuples
             std::tuple<T &&> tup(std::forward<T>(val));
-            return gen_impl_str<std::tuple<Accumulated..., T &&>,
-                                TailSeq...>::
-                generate_impl(
-                    std::tuple_cat(
-                        std::forward<std::tuple<Accumulated...>>(acc),
-                        std::forward<std::tuple<T &&>>(tup)),
-                    std::forward<TailSeq>(rest)...);
+            return gen_impl_str<std::tuple<Accumulated..., T &&>, TailSeq...>::
+                generate_impl(std::tuple_cat(
+                                  std::forward<std::tuple<Accumulated...>>(acc),
+                                  std::forward<std::tuple<T &&>>(tup)),
+                              std::forward<TailSeq>(rest)...);
         }
     };
 
@@ -118,7 +115,10 @@ template <typename FResult> struct Comb_gen {
                       TailSeq &&...rest) {
             // Make one tuple from multiple tuples
             return std::apply(
-                [](auto &&...args) { return std::tuple_cat(std::forward<decltype(args)>(args)...); },
+                [](auto &&...args) {
+                    return std::tuple_cat(
+                        std::forward<decltype(args)>(args)...);
+                },
                 std::make_tuple((
                     gen_impl_str<
                         std::tuple<Accumulated &&...,
@@ -137,8 +137,8 @@ template <typename FResult> struct Comb_gen {
     template <typename T, T... Ints, typename... Accumulated>
     struct gen_impl_str<std::tuple<Accumulated...>,
                         std::integer_sequence<T, Ints...>> {
-        constexpr static auto generate_impl(std::tuple<Accumulated ...> &&acc,
-                                     std::integer_sequence<T, Ints...>) {
+        constexpr static auto generate_impl(std::tuple<Accumulated...> &&acc,
+                                            std::integer_sequence<T, Ints...>) {
             return std::make_tuple(std::tuple_cat(
                 std::forward<std::tuple<Accumulated...>>(acc),
                 std::make_tuple(std::integral_constant<T, Ints>()))...);
@@ -148,11 +148,11 @@ template <typename FResult> struct Comb_gen {
     // Base for category 2
     template <typename T, typename... Accumulated>
     struct gen_impl_str<std::tuple<Accumulated...>, T> {
-        constexpr static auto
-        generate_impl( std::tuple<Accumulated...> &&acc, T &&val) {
+        constexpr static auto generate_impl(std::tuple<Accumulated...> &&acc,
+                                            T &&val) {
             std::tuple<T &&> tup(std::forward<T>(val));
             return std::make_tuple(
-                std::tuple_cat(std::forward<std::tuple<Accumulated ...>>(acc),
+                std::tuple_cat(std::forward<std::tuple<Accumulated...>>(acc),
                                std::forward<std::tuple<T &&>>(tup)));
         }
     };
@@ -179,7 +179,8 @@ template <typename FResult> struct Comb_gen {
             if constexpr (std::is_same_v<void, FResult>) {
                 std::apply(
                     [&f](auto &&...x) {
-                        (..., std::apply(std::forward<F>(f),std::forward<decltype(x)>(x)));
+                        (..., std::apply(std::forward<F>(f),
+                                         std::forward<decltype(x)>(x)));
                     },
                     std::forward<decltype(invoke_results)>(invoke_results));
 
@@ -188,8 +189,9 @@ template <typename FResult> struct Comb_gen {
 
                 std::apply(
                     [&](auto &&...x) {
-                        (...,
-                         result.push_back(std::forward<FResult>(std::apply(std::forward<F>(f), std::forward<decltype(x)>(x)))));
+                        (..., result.push_back(std::forward<FResult>(
+                                  std::apply(std::forward<F>(f),
+                                             std::forward<decltype(x)>(x)))));
                     },
                     std::forward<decltype(invoke_results)>(invoke_results));
                 return result;
@@ -201,8 +203,9 @@ template <typename FResult> struct Comb_gen {
 
                 std::apply(
                     [&](auto &&...x) {
-                        (...,
-                         result.push_back(std::forward<FResult>(std::apply(std::forward<F>(f), std::forward<decltype(x)>(x)))));
+                        (..., result.push_back(std::forward<FResult>(
+                                  std::apply(std::forward<F>(f),
+                                             std::forward<decltype(x)>(x)))));
                     },
                     std::forward<decltype(invoke_results)>(invoke_results));
                 return result;
