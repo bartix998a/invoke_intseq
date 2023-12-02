@@ -179,7 +179,7 @@ template <typename FResult> struct Comb_gen {
             if constexpr (std::is_same_v<void, FResult>) {
                 std::apply(
                     [&f](auto &&...x) {
-                        (..., std::apply(std::forward<F>(f), x));
+                        (..., std::apply(std::forward<F>(f),std::forward<decltype(x)>(x)));
                     },
                     std::forward<decltype(invoke_results)>(invoke_results));
 
@@ -189,7 +189,7 @@ template <typename FResult> struct Comb_gen {
                 std::apply(
                     [&](auto &&...x) {
                         (...,
-                         result.push_back(std::apply(std::forward<F>(f), x)));
+                         result.push_back(std::apply(std::forward<F>(f), std::forward<decltype(x)>(x))));
                     },
                     std::forward<decltype(invoke_results)>(invoke_results));
                 return result;
@@ -202,7 +202,7 @@ template <typename FResult> struct Comb_gen {
                 std::apply(
                     [&](auto &&...x) {
                         (...,
-                         result.push_back((std::apply(std::forward<F>(f), x))));
+                         result.push_back((std::apply(std::forward<F>(f), std::forward<decltype(x)>(x)))));
                     },
                     std::forward<decltype(invoke_results)>(invoke_results));
                 return result;
