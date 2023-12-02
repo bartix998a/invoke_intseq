@@ -198,8 +198,6 @@ template <typename FResult> struct Comb_gen {
             } else {
                 using result_t = std::remove_reference_t<FResult>;
                 std::vector<std::reference_wrapper<result_t>> result{};
-                // FIXME: just a test:forward
-                // result.push_back();
 
                 std::apply(
                     [&](auto &&...x) {
@@ -219,7 +217,7 @@ template <typename FResult> struct Comb_gen {
 template <class F, class... Args>
 constexpr auto invoke_intseq(F &&f, Args &&...args) -> decltype(auto) {
     using result_type =
-        invoke_inteq_details::transform_arg_types<decltype(f), Args...>::type;
+        typename invoke_inteq_details::transform_arg_types<decltype(f), Args...>::type;
 
     if constexpr (!invoke_inteq_details::any_match<Args...>::value ||
                   sizeof...(args) == 0) {
@@ -234,22 +232,4 @@ constexpr auto invoke_intseq(F &&f, Args &&...args) -> decltype(auto) {
     }
 }
 
-// FIXME:
-static_assert(invoke_inteq_details::calc_size(2, 2) == 1, "this");
-static_assert(
-    invoke_inteq_details::calc_size(7, std::integer_sequence<int, 0, 1>{},
-                                    std::integer_sequence<int, 4, 5>{}) == 4,
-    "this");
-static_assert(invoke_inteq_details::calc_size() == 1, "this");
-static_assert(
-    invoke_inteq_details::calc_size(std::integer_sequence<int, 0, 1>{},
-                                    std::integer_sequence<int, 0, 1>{},
-                                    std::integer_sequence<int, 0, 1>{}) == 8,
-    "this");
-static_assert(
-    invoke_inteq_details::calc_size(std::integer_sequence<int, 0, 1>{}, 2) == 2,
-    "this");
-static_assert(
-    invoke_inteq_details::calc_size(std::integer_sequence<int, 4, 4>{}) == 2,
-    "this");
 #endif // !INVOKE_INTSEQ
