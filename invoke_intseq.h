@@ -118,7 +118,7 @@ template <typename FResult> struct Comb_gen {
                       TailSeq &&...rest) {
             // Make one tuple from multiple tuples
             return std::apply(
-                [](auto &&...args) { return std::tuple_cat(args...); },
+                [](auto &&...args) { return std::tuple_cat(std::forward<decltype(args)>(args)...); },
                 std::make_tuple((
                     gen_impl_str<
                         std::tuple<Accumulated &&...,
@@ -137,7 +137,7 @@ template <typename FResult> struct Comb_gen {
     template <typename T, T... Ints, typename... Accumulated>
     struct gen_impl_str<std::tuple<Accumulated...>,
                         std::integer_sequence<T, Ints...>> {
-        constexpr auto generate_impl(std::tuple<Accumulated ...> &&acc,
+        constexpr static auto generate_impl(std::tuple<Accumulated ...> &&acc,
                                      std::integer_sequence<T, Ints...>) {
             return std::make_tuple(std::tuple_cat(
                 std::forward<std::tuple<Accumulated...>>(acc),
@@ -181,7 +181,7 @@ template <typename FResult> struct Comb_gen {
                     [&f](auto &&...x) {
                         (..., std::apply(std::forward<F>(f), x));
                     },
-                    std::forward<>(invoke_results));
+                    std::forward<decltype(invoke_results)>(invoke_results));
 
             } else if constexpr (!std::is_reference_v<FResult>) {
                 std::vector<FResult> result{};
@@ -191,7 +191,7 @@ template <typename FResult> struct Comb_gen {
                         (...,
                          result.push_back(std::apply(std::forward<F>(f), x)));
                     },
-                    std::forward<>(invoke_results));
+                    std::forward<decltype(invoke_results)>(invoke_results));
                 return result;
             } else {
                 using temp_for_sure_fixme = std::remove_reference_t<FResult>;
@@ -204,7 +204,7 @@ template <typename FResult> struct Comb_gen {
                         (...,
                          result.push_back((std::apply(std::forward<F>(f), x))));
                     },
-                    std::forward<>(invoke_results));
+                    std::forward<decltype(invoke_results)>(invoke_results));
                 return result;
             }
         }
