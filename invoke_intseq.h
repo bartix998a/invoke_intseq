@@ -189,20 +189,20 @@ template <typename FResult> struct Comb_gen {
                 std::apply(
                     [&](auto &&...x) {
                         (...,
-                         result.push_back(std::apply(std::forward<F>(f), std::forward<decltype(x)>(x))));
+                         result.push_back(std::forward<FResult>(std::apply(std::forward<F>(f), std::forward<decltype(x)>(x)))));
                     },
                     std::forward<decltype(invoke_results)>(invoke_results));
                 return result;
             } else {
-                using temp_for_sure_fixme = std::remove_reference_t<FResult>;
-                std::vector<temp_for_sure_fixme> result{};
+                using result_t = std::remove_reference_t<FResult>;
+                std::vector<std::reference_wrapper<result_t>> result{};
                 // FIXME: just a test:forward
                 // result.push_back();
 
                 std::apply(
                     [&](auto &&...x) {
                         (...,
-                         result.push_back((std::apply(std::forward<F>(f), std::forward<decltype(x)>(x)))));
+                         result.push_back(std::forward<FResult>(std::apply(std::forward<F>(f), std::forward<decltype(x)>(x)))));
                     },
                     std::forward<decltype(invoke_results)>(invoke_results));
                 return result;
