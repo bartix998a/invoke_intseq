@@ -81,97 +81,81 @@ template <typename FResult> struct Comb_gen {
 
     // Base case for the recursion - when only one sequence is left
     // Base for category 1
-    // template <typename T, T... Ints, typename... Accumulated>
-    // constexpr static auto generate_impl(const std::tuple<Accumulated...>
-    // &acc,
-    //                                     std::integer_sequence<T, Ints...>) ->
-    //                                     decltype(auto){
-    //     return std::make_tuple(std::tuple_cat(acc,
-    //     std::make_tuple(std::integral_constant<T, Ints>()))...);
-    // }
-    //
-    // // Base for category 2
-    // template <typename T, typename... Accumulated>
-    // constexpr static auto generate_impl(const std::tuple<Accumulated...>
-    // &acc,
-    //                                     T val) -> decltype(auto) {
-    //     return std::make_tuple(std::tuple_cat(acc, std::make_tuple(val)));
-    // }
-    //
-    // // Recursive case - handles multiple integer sequences
-    // // Recursive case for category 1
-    // template <typename T, typename... TailSeq, typename... Accumulated>
-    // constexpr static auto generate_impl(const std::tuple<Accumulated...>
-    // &acc,
-    //                                     T val, TailSeq... rest) ->
-    //                                     decltype(auto) {
-    //     // Make one tuple from multiple tuples
-    //     return generate_impl(std::tuple_cat(acc, std::make_tuple(val)),
-    //                          rest...);
-    // }
-    //
-    // // Recursive case - handles multiple integer sequences
-    // // Recursive case for category 2
-    // template <typename T, T... HeadInts, typename... TailSeq,
-    //           typename... Accumulated>
-    // constexpr static auto generate_impl(const std::tuple<Accumulated...>
-    // &acc,
-    //                                     std::integer_sequence<T,
-    //                                     HeadInts...>, TailSeq... rest) ->
-    //                                     decltype(auto) {
-    //     // Make one tuple from multiple tuples
-    //     return std::apply(
-    //         [](auto &&...args) { return std::tuple_cat(args...); },
-    //         std::make_tuple(generate_impl(
-    //             std::tuple_cat(acc, std::make_tuple(std::integral_constant<T,
-    //             HeadInts>())), rest...)...));
-    // }
-    //
-    //
 
-    template <typename T, T... Ints, typename... Accumulated, typename Acc>
-    constexpr static auto generate_impl(Acc &&acc, std::integer_sequence<T, Ints...>)
-        -> decltype(auto) {
-        return std::make_tuple(std::tuple_cat(
-            std::forward<Acc>(acc),
-            std::make_tuple(std::integral_constant<T, Ints>()))...);
-    }
+    template <typename T1, typename T2, typename... TailSeq>
+    struct gen_impl_str {
+        constexpr static auto generate_impl() {
+            return; // no tuple so no nothing essentially
+        }
+    };
 
-    // Base for category 2
-    template <typename T, typename... Accumulated, typename Acc>
-    constexpr static auto generate_impl(Acc &&acc, T val) -> decltype(auto) {
-        return std::make_tuple(
-            std::tuple_cat(std::forward<Acc>(acc), std::make_tuple(val)));
-    }
-
-    // Recursive case - handles multiple integer sequences
-    // Recursive case for category 1
-    template <typename T, typename... TailSeq, typename... Accumulated,
-              typename Acc>
-    constexpr static auto generate_impl(Acc &&acc, T val, TailSeq... rest)
-        -> decltype(auto) {
-        return generate_impl(
-            std::tuple_cat(std::forward<Acc>(acc), std::make_tuple(val)),
-            std::forward<TailSeq>(rest)...);
-    }
+    template <typename... Accumulated, typename T, typename... TailSeq>
+    struct gen_impl_str<std::tuple<Accumulated...>, T, TailSeq...> {
+        constexpr static auto
+        generate_impl(std::tuple<Accumulated...> &&acc, T &&val,
+                      TailSeq &&...rest) {
+            // Make one tuple from multiple tuples
+            std::tuple<T &&> tup(std::forward<T>(val));
+            return gen_impl_str<std::tuple<Accumulated..., T &&>,
+                                TailSeq...>::
+                generate_impl(
+                    std::tuple_cat(
+                        std::forward<std::tuple<Accumulated...>>(acc),
+                        std::forward<std::tuple<T &&>>(tup)),
+                    std::forward<TailSeq>(rest)...);
+        }
+    };
 
     // Recursive case - handles multiple integer sequences
     // Recursive case for category 2
     template <typename T, T... HeadInts, typename... TailSeq,
-              typename... Accumulated, typename Acc>
-    constexpr static auto generate_impl(Acc &&acc,
-                                 std::integer_sequence<T, HeadInts...>,
-                                 TailSeq... rest) -> decltype(auto) {
-        return std::apply(
-            [](auto &&...args) {
-                return std::tuple_cat(std::forward<decltype(args)>(args)...);
-            },
-            std::make_tuple(generate_impl(
-                std::tuple_cat(
-                    std::forward<Acc>(acc),
-                    std::make_tuple(std::integral_constant<T, HeadInts>())),
-                std::forward<TailSeq>(rest)...)...));
-    }
+              typename... Accumulated>
+    struct gen_impl_str<std::tuple<Accumulated...>,
+                        std::integer_sequence<T, HeadInts...>, TailSeq...> {
+        constexpr static auto
+        generate_impl(std::tuple<Accumulated...> &&acc,
+                      std::integer_sequence<T, HeadInts...>,
+                      TailSeq &&...rest) {
+            // Make one tuple from multiple tuples
+            return std::apply(
+                [](auto &&...args) { return std::tuple_cat(std::forward<decltype(args)>(args)...); },
+                std::make_tuple((
+                    gen_impl_str<
+                        std::tuple<Accumulated &&...,
+                                   std::integral_constant<T, HeadInts> &&>,
+                        TailSeq...>::
+                        generate_impl(
+                            std::tuple_cat(
+                                std::forward<std::tuple<Accumulated &&...>>(
+                                    acc),
+                                std::tuple<std::integral_constant<T, HeadInts>>(
+                                    std::integral_constant<T, HeadInts>())),
+                            std::forward<TailSeq>(rest)...))...));
+        }
+    };
+
+    template <typename T, T... Ints, typename... Accumulated>
+    struct gen_impl_str<std::tuple<Accumulated...>,
+                        std::integer_sequence<T, Ints...>> {
+        constexpr static auto generate_impl(std::tuple<Accumulated ...> &&acc,
+                                     std::integer_sequence<T, Ints...>) {
+            return std::make_tuple(std::tuple_cat(
+                std::forward<std::tuple<Accumulated...>>(acc),
+                std::make_tuple(std::integral_constant<T, Ints>()))...);
+        }
+    };
+
+    // Base for category 2
+    template <typename T, typename... Accumulated>
+    struct gen_impl_str<std::tuple<Accumulated...>, T> {
+        constexpr static auto
+        generate_impl( std::tuple<Accumulated...> &&acc, T &&val) {
+            std::tuple<T &&> tup(std::forward<T>(val));
+            return std::make_tuple(
+                std::tuple_cat(std::forward<std::tuple<Accumulated ...>>(acc),
+                               std::forward<std::tuple<T &&>>(tup)));
+        }
+    };
 
     // Generates all possible combinations of integer sequences.
     // Ex.:
@@ -179,48 +163,48 @@ template <typename FResult> struct Comb_gen {
     // std::integer_sequence<int, 3, 4>{}) will generate
     // {{0, 2, 3}, {0, 2, 4}, {1, 2, 3}, {1, 2, 4}}
     // (where {} denotes a tuple)
-    template <typename... Args>
-    constexpr static auto generate(Args &&...args) -> decltype(auto) {
-        std::tuple<> acc{};
-        return generate_impl(acc, std::forward<Args>(args)...);
+    template <typename... Args> constexpr static auto generate(Args &&...args) {
+        auto acc = std::tuple<>();
+        return gen_impl_str<std::tuple<>, Args...>::generate_impl(
+            std::forward<std::tuple<>>(acc), std::forward<Args>(args)...);
     }
 
     template <class F, typename... Args>
     constexpr static auto apply_to_comb(F &&f, Args &&...args)
         -> decltype(auto) {
 
-        // auto invoke_results = generate(args...);
         auto invoke_results = generate(std::forward<Args>(args)...);
-        using tup_type = decltype(invoke_results);
-        // return std::vector<int>{0};
-        if constexpr (std::tuple_size<tup_type>::value != 0) {
+        if constexpr (std::tuple_size<decltype(invoke_results)>::value != 0) {
 
             if constexpr (std::is_same_v<void, FResult>) {
                 std::apply(
-                    [&f](auto &...x) { (..., std::apply(std::forward<F>(f), x));
-                    }, invoke_results);
-            }
-            // return std::vector<int>{0};
-            else if constexpr (!std::is_reference_v<FResult>) {
+                    [&f](auto &&...x) {
+                        (..., std::apply(std::forward<F>(f),std::forward<decltype(x)>(x)));
+                    },
+                    std::forward<decltype(invoke_results)>(invoke_results));
+
+            } else if constexpr (!std::is_reference_v<FResult>) {
                 std::vector<FResult> result{};
 
                 std::apply(
                     [&](auto &&...x) {
-                        (..., result.push_back(std::apply(
-                            std::forward<F>(
-                            f), x)));
+                        (...,
+                         result.push_back(std::forward<FResult>(std::apply(std::forward<F>(f), std::forward<decltype(x)>(x)))));
                     },
-                    invoke_results);
+                    std::forward<decltype(invoke_results)>(invoke_results));
                 return result;
             } else {
-                std::vector<std::remove_reference_t<FResult>> result{};
+                using result_t = std::remove_reference_t<FResult>;
+                std::vector<std::reference_wrapper<result_t>> result{};
+                // FIXME: just a test:forward
+                // result.push_back();
+
                 std::apply(
                     [&](auto &&...x) {
-                        (..., result.push_back(
-                            (std::apply(std::forward<F>(f), x))
-                        ));
+                        (...,
+                         result.push_back(std::forward<FResult>(std::apply(std::forward<F>(f), std::forward<decltype(x)>(x)))));
                     },
-                    invoke_results);
+                    std::forward<decltype(invoke_results)>(invoke_results));
                 return result;
             }
         }
@@ -232,26 +216,18 @@ template <typename FResult> struct Comb_gen {
 template <class F, class... Args>
 constexpr auto invoke_intseq(F &&f, Args &&...args) -> decltype(auto) {
     using result_type =
-        invoke_inteq_details::transform_arg_types<decltype(std::forward<F>(f)),
-                                                  Args...>::type;
+        invoke_inteq_details::transform_arg_types<decltype(f), Args...>::type;
 
     if constexpr (!invoke_inteq_details::any_match<Args...>::value ||
                   sizeof...(args) == 0) {
         // Direct invocation for cases where special processing is not required
-        // return 0;
-        // std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
         return std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
     } else if constexpr (!invoke_inteq_details::any_empty_integer_sequence<
                              Args...>::value) {
-
-        // return std::vector<int>{0};
         return invoke_inteq_details::Comb_gen<result_type>::apply_to_comb(
-            f, std::forward<Args>(args)...);
+            std::forward<F>(f), std::forward<Args>(args)...);
     } else {
-        // FIXME
         return std::vector<result_type>{};
-
-        // return std::vector<int>{0};
     }
 }
 
