@@ -5,6 +5,7 @@
 #include <iostream>
 #include <ranges>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 
 namespace {
@@ -79,14 +80,14 @@ int main() {
                            [](auto...) {},
                            std::integer_sequence<int, 1, 2, 3>(), 4, 5)),
                        void>);
-    // static_assert(std::ranges::range<decltype(invoke_intseq(
-    //                   [](auto...) { return 0; },
-    //                   std::integer_sequence<int, 1, 2, 3>(), 4, 5))>);
-    // static_assert(
-    //     std::is_same_v<std::ranges::range_value_t<decltype(invoke_intseq(
-    //                        [](auto...) { return 0; },
-    //                        std::integer_sequence<int, 1, 2, 3>(), 4, 5))>,
-    //                    int>);
+    static_assert(std::ranges::range<decltype(invoke_intseq(
+                      [](auto...) { return 0; },
+                      std::integer_sequence<int, 1, 2, 3>(), 4, 5))>);
+    static_assert(
+        std::is_same_v<std::ranges::range_value_t<decltype(invoke_intseq(
+                           [](auto...) { return 0; },
+                           std::integer_sequence<int, 1, 2, 3>(), 4, 5))>,
+                       int>);
 
     std::cout << "empty" << std::endl;
     invoke_intseq([]() { std::cout << "nothing" << std::endl; });
@@ -132,13 +133,13 @@ int main() {
     std::cout << invoke_intseq(make_number, 9, 8, 7) << std::endl;
     static_assert(invoke_intseq(make_number, 9, 8, 7) == 987);
 
-    // std::cout << "integer sequence single result" << std::endl;
-    // for (auto i :
-    //      invoke_intseq(make_number, std::integer_sequence<int, 6>(), 5, 4))
-    //     std::cout << i << std::endl;
-    // static_assert(std::ranges::equal(
-    //     invoke_intseq(make_number, std::integer_sequence<int, 6>(), 5, 4),
-    //     std::array{654}));
+    std::cout << "integer sequence single result" << std::endl;
+    for (auto i :
+         invoke_intseq(make_number, std::integer_sequence<int, 6>(), 5, 4))
+        std::cout << i << std::endl;
+    static_assert(std::ranges::equal(
+        invoke_intseq(make_number, std::integer_sequence<int, 6>(), 5, 4),
+        std::array{654}));
 
     std::cout << "integer sequence empty result" << std::endl;
     for (auto i :
@@ -148,23 +149,23 @@ int main() {
         invoke_intseq(make_number, std::integer_sequence<int>(), 5, 4),
         std::array<int, 0>{}));
 
-    // std::cout << "integer sequence multiple result" << std::endl;
-    // for (auto i :
-    //      invoke_intseq(make_number, 1, std::integer_sequence<int, 2, 3>(),
-    //                    std::integer_sequence<int, 4, 5>()))
-    //     std::cout << i << std::endl;
-    // static_assert(std::ranges::equal(
-    //     invoke_intseq(make_number, 1, std::integer_sequence<int, 2, 3>(),
-    //                   std::integer_sequence<int, 4, 5>()),
-    //     std::array{124, 125, 134, 135}));
-    //
-    // std::cout << "tuple result" << std::endl;
-    // for (const auto &t : invoke_intseq(
-    //          [](auto a, auto b, int c, auto d) {
-    //              return std::make_tuple(a, b, c, d);
-    //          },
-    //          "ala", "ma", std::integer_sequence<int, 5, 7, 9>(), "kotów"))
-    //     std::apply([](auto... a) { Print(a...); }, t);
+    std::cout << "integer sequence multiple result" << std::endl;
+    for (auto i :
+         invoke_intseq(make_number, 1, std::integer_sequence<int, 2, 3>(),
+                       std::integer_sequence<int, 4, 5>()))
+        std::cout << i << std::endl;
+    static_assert(std::ranges::equal(
+        invoke_intseq(make_number, 1, std::integer_sequence<int, 2, 3>(),
+                      std::integer_sequence<int, 4, 5>()),
+        std::array{124, 125, 134, 135}));
+
+    std::cout << "tuple result" << std::endl;
+    for (const auto &t : invoke_intseq(
+             [](auto a, auto b, int c, auto d) {
+                 return std::make_tuple(a, b, c, d);
+             },
+             "ala", "ma", std::integer_sequence<int, 5, 7, 9>(), "kotów"))
+        std::apply([](auto... a) { Print(a...); }, t);
 
     std::cout << "Foo: const auto&" << std::endl;
     invoke_intseq([](const auto &...a) { Print(a...); }, Foo(), foo);

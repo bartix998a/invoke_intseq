@@ -6,6 +6,7 @@
 #include <optional>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 template <class F, class... Args>
@@ -20,6 +21,12 @@ template <typename T> struct is_integer_sequence : std::false_type {
 template <typename T, T... vals>
 struct is_integer_sequence<std::integer_sequence<T, vals...>> : std::true_type {
     using type = std::integral_constant<T, 0>;
+};
+
+template <typename T, T First, T... rest>
+struct is_integer_sequence<std::integer_sequence<T, First, rest...>>
+    : std::true_type {
+    using type = std::integral_constant<T, First>;
 };
 
 /* Checks if any of 'others' is of type std::integer_sequence. */
@@ -86,18 +93,20 @@ struct generate_struct<std::tuple<Previous_args...>,
             [](auto &&...args) {
                 return std::tuple_cat(std::forward<decltype(args)>(args)...);
             },
-            std::make_tuple(
-                (generate_struct<
-                    std::tuple<Previous_args &&...,
-                               std::integral_constant<Int_type, ints> &&>,
-                    Remaining_args...>::
-                     generate(
+            std::make_tuple( 
+                generate_struct<std::tuple<Previous_args &&..., 
+                                            std::integral_constant<Int_type, ints> &&>,
+                                Remaining_args...>::
+                generate(
                          std::tuple_cat(
-                             std::forward<std::tuple<Previous_args &&...>>(
-                                 previous_args),
-                             std::tuple<std::integral_constant<Int_type, ints>>(
-                                 std::integral_constant<Int_type, ints>())),
-                         std::forward<Remaining_args>(remaining_args)...))...));
+                                std::forward<std::tuple<Previous_args &&...>>(previous_args),
+                                std::tuple<std::integral_constant<Int_type, ints>>(
+                                std::integral_constant<Int_type, ints>())
+                         ),
+                    std::forward<Remaining_args>(remaining_args)...
+                )...
+            )
+        );
     }
 };
 
@@ -116,7 +125,7 @@ struct generate_struct<std::tuple<Previous_args...>,
 };
 
 /* A case when the last element is not an integer sequence.
- * Merges last into remaining_args and returns the new tuple.*/ //
+ * Merges last into remaining_args and returns the new tuple.*/
 template <typename Last, typename... Previous_args>
 struct generate_struct<std::tuple<Previous_args...>, Last> {
     constexpr static auto generate(std::tuple<Previous_args...> &&previous_args,
@@ -133,49 +142,37 @@ struct generate_struct<std::tuple<Previous_args...>, Last> {
  */
 template <class F, typename... Args>
 constexpr static auto apply_to_comb(F &&f, Args &&...args) -> decltype(auto) {
-    using FResult =
+    using f_res_t =
         typename invoke_intseq_details::
-            get_f_result_type<decltype(f),Args...>::type;
+            get_f_result_type<decltype(f), Args...>::type;
+
+    using result_t = std::conditional_t<
+        std::is_reference_v<f_res_t>,
+        std::reference_wrapper<std::remove_reference_t<f_res_t>>, 
+        f_res_t>;
 
     auto invoke_args = generate_struct<std::tuple<>, Args...>::generate(
         std::forward<std::tuple<>>(std::tuple<>()),
         std::forward<Args>(args)...);
-    if constexpr (std::tuple_size<decltype(invoke_args)>::value != 0) {
 
-        if constexpr (std::is_same_v<void, FResult>) {
-            // f returns nothing (void).
-            std::apply(
-                [&f](auto &&...x) {
-                    (..., std::apply(std::forward<F>(f),
-                                     std::forward<decltype(x)>(x)));
-                },
-                std::forward<decltype(invoke_args)>(invoke_args));
-        } else if constexpr (!std::is_reference_v<FResult>) {
-            // f returns something that is not a reference.
-            std::vector<FResult> result{};
+    if constexpr (std::is_same_v<void, f_res_t>) {
+        // f returns nothing (void).
+        std::apply(
+            [&f](auto &&...x) {
+                (..., std::apply(std::forward<F>(f),
+                                 std::forward<decltype(x)>(x)));
+            },
+            std::forward<decltype(invoke_args)>(invoke_args));
+    } else {
+        std::vector<result_t> result{};
 
-            std::apply(
-                [&](auto &&...x) {
-                    (...,
-                     result.push_back(std::forward<FResult>(std::apply(
-                         std::forward<F>(f), std::forward<decltype(x)>(x)))));
-                },
-                std::forward<decltype(invoke_args)>(invoke_args));
-            return result;
-        } else {
-            // f returns a reference.
-            using result_t = std::remove_reference_t<FResult>;
-            std::vector<std::reference_wrapper<result_t>> result{};
-
-            std::apply(
-                [&](auto &&...x) {
-                    (...,
-                     result.push_back(std::forward<FResult>(std::apply(
-                         std::forward<F>(f), std::forward<decltype(x)>(x)))));
-                },
-                std::forward<decltype(invoke_args)>(invoke_args));
-            return result;
-        }
+        std::apply(
+            [&](auto &&...x) {
+                (..., result.push_back(std::forward<f_res_t>(std::apply(
+                          std::forward<F>(f), std::forward<decltype(x)>(x)))));
+            },
+            std::forward<decltype(invoke_args)>(invoke_args));
+        return result;
     }
 }
 
@@ -183,10 +180,6 @@ constexpr static auto apply_to_comb(F &&f, Args &&...args) -> decltype(auto) {
 
 template <class F, class... Args>
 constexpr auto invoke_intseq(F &&f, Args &&...args) -> decltype(auto) {
-    using result_type =
-        typename invoke_intseq_details::get_f_result_type<decltype(f),
-                                                          Args...>::type;
-
     if constexpr (!invoke_intseq_details::any_match<Args...>::value ||
                   sizeof...(args) == 0) {
         // No argument of type std::integer_sequence - no special processing.
@@ -197,6 +190,9 @@ constexpr auto invoke_intseq(F &&f, Args &&...args) -> decltype(auto) {
         return invoke_intseq_details::apply_to_comb(
             std::forward<F>(f), std::forward<Args>(args)...);
     } else {
+        using result_type =
+            typename invoke_intseq_details::get_f_result_type<decltype(f),
+                                                              Args...>::type;
         // Process arguments of type std::integer_sequence<T>, so
         // integer_sequences with no integers.
         return std::vector<result_type>{};
