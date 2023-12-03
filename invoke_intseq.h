@@ -138,10 +138,10 @@ constexpr static auto apply_to_comb(F &&f, Args &&...args) -> decltype(auto) {
         typename invoke_intseq_details::get_f_result_type<decltype(f),
                                                           Args...>::type;
 
-    auto invoke_results = generate_struct<std::tuple<>, Args...>::generate(
+    auto invoke_args = generate_struct<std::tuple<>, Args...>::generate(
         std::forward<std::tuple<>>(std::tuple<>()),
         std::forward<Args>(args)...);
-    if constexpr (std::tuple_size<decltype(invoke_results)>::value != 0) {
+    if constexpr (std::tuple_size<decltype(invoke_args)>::value != 0) {
 
         if constexpr (std::is_same_v<void, FResult>) {
             // f returns nothing (void).
@@ -150,7 +150,7 @@ constexpr static auto apply_to_comb(F &&f, Args &&...args) -> decltype(auto) {
                     (..., std::apply(std::forward<F>(f),
                                      std::forward<decltype(x)>(x)));
                 },
-                std::forward<decltype(invoke_results)>(invoke_results));
+                std::forward<decltype(invoke_args)>(invoke_args));
 
         } else if constexpr (!std::is_reference_v<FResult>) {
             // f returns something that is not a reference.
@@ -162,7 +162,7 @@ constexpr static auto apply_to_comb(F &&f, Args &&...args) -> decltype(auto) {
                      result.push_back(std::forward<FResult>(std::apply(
                          std::forward<F>(f), std::forward<decltype(x)>(x)))));
                 },
-                std::forward<decltype(invoke_results)>(invoke_results));
+                std::forward<decltype(invoke_args)>(invoke_args));
             return result;
         } else {
             // f returns a reference.
@@ -175,7 +175,7 @@ constexpr static auto apply_to_comb(F &&f, Args &&...args) -> decltype(auto) {
                      result.push_back(std::forward<FResult>(std::apply(
                          std::forward<F>(f), std::forward<decltype(x)>(x)))));
                 },
-                std::forward<decltype(invoke_results)>(invoke_results));
+                std::forward<decltype(invoke_args)>(invoke_args));
             return result;
         }
     }
