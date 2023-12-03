@@ -38,7 +38,7 @@ struct any_empty_integer_sequence
 
 // Get the result type of F.
 template <typename F, typename... Args>
-struct get_f_result_type { // todo zmienic nazwe
+struct get_f_result_type {
     using type =
         std::invoke_result_t<F, typename is_integer_sequence<Args>::type...>;
 };
